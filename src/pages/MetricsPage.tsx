@@ -359,7 +359,7 @@ export default function MetricsPage() {
                                 label={{
                                     value: verticalLabel,
                                     angle: -90,
-                                    position: "insideLeft",
+
                                 }}
                             />
                             <Tooltip content={<CustomTooltip />} />

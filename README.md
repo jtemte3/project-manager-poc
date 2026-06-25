@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+# 🏇 Jockey
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A lightweight project management tool built with React, TypeScript, and Vite. Jockey provides an intuitive interface for managing projects, sprints, and tasks using Agile methodologies.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Projects** — Create and manage multiple projects from a centralized dashboard
+- **Backlog** — Organize and prioritize tickets before they enter a sprint
+- **Sprint Planning** — Assign tickets to sprints with complexity tracking
+- **Kanban Board** — Visualize workflow with drag-and-drop columns (Backlog, Todo, In Progress, Done)
+- **Metrics** — Track progress with charts and analytics
+- **Epics & Tickets** — Group related work into epics with detailed ticket descriptions and checklists
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js 18+
+- npm
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Installation
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Clone the repository
+git clone <repository-url>
+cd project-manager-poc
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Install dependencies
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Running the Development Server
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+npm run dev
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+The app will start on **http://localhost:5173**.
+
+> **Tip:** Press `q` in the terminal to stop the development server.
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+The optimized build will be output to the `dist/` directory.
+
+## Tech Stack
+
+- **React 19** — UI library
+- **TypeScript** — Type-safe development
+- **Vite** — Fast build tooling and dev server
+- **MUI (Material UI)** — Component library
+- **Recharts** — Data visualization
+- **React Router** — Client-side routing
+
+## Project Structure
+
+```
+src/
+├── components/   # Reusable UI components
+├── hooks/        # Custom React hooks
+├── models/       # TypeScript interfaces
+├── pages/        # Route components
+├── services/     # Data services
+├── state/        # State management
+└── utils/        # Helper functions
 ```
