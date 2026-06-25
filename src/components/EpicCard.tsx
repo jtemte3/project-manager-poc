@@ -8,12 +8,16 @@ import EpicEditor from "./EpicEditor";
 
 interface Props {
     epic: Epic;
+    expanded: boolean;
+    onToggle: () => void;
 }
 
 export default function EpicCard({
     epic,
+    expanded,
+    onToggle,
 }: Props) {
-    const [expanded, setExpanded] =
+    const [editorOpen, setEditorOpen] =
         useState(false);
 
     const { project, deleteEpic } =
@@ -32,7 +36,11 @@ export default function EpicCard({
                 borderLeftColor: epic.color,
             }}
         >
-            <div className="epic-card__header">
+            <div
+                className="epic-card__header"
+                onClick={onToggle}
+                style={{ cursor: "pointer" }}
+            >
                 <div>
                     <span className="epic-card__eyebrow">
                         Epic
@@ -48,31 +56,29 @@ export default function EpicCard({
                 <div className="epic-card__actions">
                     <button
                         type="button"
-                        onClick={() =>
-                            setExpanded(
-                                !expanded
-                            )
-                        }
+                        onClick={event => {
+                            event.stopPropagation();
+                            setEditorOpen(!editorOpen);
+                        }}
                     >
-                        {expanded
+                        {editorOpen
                             ? "Close"
                             : "Edit"}
                     </button>
 
                     <button
                         type="button"
-                        onClick={() =>
-                            deleteEpic(
-                                epic.id
-                            )
-                        }
+                        onClick={event => {
+                            event.stopPropagation();
+                            deleteEpic(epic.id);
+                        }}
                     >
                         Delete
                     </button>
                 </div>
             </div>
 
-            {expanded && (
+            {editorOpen && (
                 <div className="epic-card__body">
                     <EpicEditor
                         epic={epic}
