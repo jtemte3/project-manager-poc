@@ -6,58 +6,128 @@ import {
 }
 from "../hooks/useProject";
 
+import FormField from "./FormField";
+
 interface Props {
     epic: Epic;
+    onClose: () => void;
 }
 
 export default function EpicEditor({
-    epic
+    epic,
+    onClose
 }: Props) {
 
     const {
-        updateEpic
+        updateEpic,
+        deleteEpic
     } = useProject();
+
+    const inputStyle = {
+        width: "100%",
+        boxSizing: "border-box" as const,
+    };
 
     return (
 
-        <div>
+        <div
+            className="epic-detail"
+            style={{
+                borderLeftColor: epic.color,
+            }}
+        >
 
-            <input
+            <div className="ticket-detail__header">
+                <div>
+                    <div className="ticket-detail__eyebrow">
+                        Epic details
+                    </div>
+                    <h2 className="ticket-detail__title">
+                        {epic.name}
+                    </h2>
+                </div>
 
-                value={epic.name}
+                <div className="ticket-detail__actions">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
 
-                onChange={e =>
-                    updateEpic(
-                        epic.id,
-                        {
-                            name:
-                                e.target.value
-                        }
-                    )
-                }
+            <FormField
+                label="Name"
+                helpText="Give this epic a short, clear name."
+            >
+                <input
+                    style={inputStyle}
+                    value={epic.name}
+                    onChange={e =>
+                        updateEpic(
+                            epic.id,
+                            {
+                                name:
+                                    e.target.value
+                            }
+                        )
+                    }
+                />
+            </FormField>
 
-            />
+            <FormField
+                label="Description"
+                helpText="Describe the goals or scope of this epic."
+            >
+                <textarea
+                    style={inputStyle}
+                    rows={6}
+                    value={epic.description}
+                    onChange={e =>
+                        updateEpic(
+                            epic.id,
+                            {
+                                description:
+                                    e.target.value
+                            }
+                        )
+                    }
+                />
+            </FormField>
 
-            <span style={{marginLeft:"8px"}}>Color: </span> 
-            <input
+            <FormField
+                label="Color"
+                helpText="Choose a color to identify this epic."
+            >
+                <input
+                    type="color"
+                    style={inputStyle}
+                    value={epic.color}
+                    onChange={e =>
+                        updateEpic(
+                            epic.id,
+                            {
+                                color:
+                                    e.target.value
+                            }
+                        )
+                    }
+                />
+            </FormField>
 
-                type="color"
-
-                value={epic.color}
-
-                style={{backgroundColor: epic.color, height: "10px", marginLeft:"8px", verticalAlign: "text-top"}}
-
-                onChange={e =>
-                    updateEpic(
-                        epic.id,
-                        {
-                            color:
-                                e.target.value
-                        }
-                    )
-                }
-
-            />
+            <div className="ticket-detail__danger-zone">
+                <button
+                    type="button"
+                    className="ticket-detail__danger"
+                    onClick={() => {
+                        deleteEpic(epic.id);
+                        onClose();
+                    }}
+                >
+                    Delete
+                </button>
+            </div>
 
         </div>
     );
