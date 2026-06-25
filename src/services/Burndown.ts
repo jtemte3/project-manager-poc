@@ -7,6 +7,11 @@ export interface BurndownPoint {
     day: number;
     actual: number;
     ideal: number;
+    completions?: {
+        ticketId: string;
+        title: string;
+        complexity: number;
+    }[];
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -54,6 +59,9 @@ export function buildBurndownData(
     const units = tickets.map(ticket => ({
         units: getUnits(ticket, mode),
         completionDay: getCompletionDay(sprint, ticket),
+        ticketId: ticket.id,
+        title: ticket.title,
+        complexity: ticket.complexity,
     }));
 
     const totalUnits = units.reduce(
@@ -64,6 +72,10 @@ export function buildBurndownData(
     return Array.from(
         { length: totalDays + 1 },
         (_, day) => {
+            const dayCompletions = units.filter(
+                item => item.completionDay === day
+            );
+
             const completed = units.reduce(
                 (sum, item) =>
                     item.completionDay !== null &&
@@ -82,11 +94,21 @@ export function buildBurndownData(
                 0
             );
 
-            return {
+            const point: BurndownPoint = {
                 day,
                 actual: Number(actual.toFixed(2)),
                 ideal: Number(ideal.toFixed(2)),
             };
+
+            if (dayCompletions.length > 0) {
+                point.completions = dayCompletions.map(item => ({
+                    ticketId: item.ticketId,
+                    title: item.title,
+                    complexity: item.complexity,
+                }));
+            }
+
+            return point;
         }
     );
 }
