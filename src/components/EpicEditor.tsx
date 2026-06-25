@@ -102,7 +102,6 @@ export default function EpicEditor({
             >
                 <input
                     type="color"
-                    style={inputStyle}
                     value={epic.color}
                     onChange={e =>
                         updateEpic(
@@ -113,6 +112,13 @@ export default function EpicEditor({
                             }
                         )
                     }
+                    style={{
+                        width: "48px",
+                        height: "48px",
+                        padding: "0",
+                        border: "none",
+                        cursor: "pointer",
+                    }}
                 />
             </FormField>
 
