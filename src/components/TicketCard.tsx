@@ -70,7 +70,7 @@ export default function TicketCard({
                 </span>
 
                 <span className="ticket-row__chip ticket-row__chip--muted">
-                    C {ticket.complexity}
+                    {ticket.complexity}
                 </span>
 
                 <span className="ticket-row__status">
