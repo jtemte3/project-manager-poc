@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import TicketCard from "../components/TicketCard";
 import EpicCard from "../components/EpicCard";
@@ -14,6 +14,20 @@ export default function BacklogPage() {
         editingTicketId,
         setEditingTicketId,
     } = useProject();
+
+    const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
+
+    const toggleEpic = (epicId: string) => {
+        setExpandedEpics(prev => {
+            const next = new Set(prev);
+            if (next.has(epicId)) {
+                next.delete(epicId);
+            } else {
+                next.add(epicId);
+            }
+            return next;
+        });
+    };
 
     const selectedTicket =
         project?.tickets.find(
@@ -115,35 +129,39 @@ export default function BacklogPage() {
                                 >
                                     <EpicCard
                                         epic={epic}
+                                        expanded={expandedEpics.has(epic.id)}
+                                        onToggle={() => toggleEpic(epic.id)}
                                     />
 
-                                    <div className="backlog-ticket-list">
-                                        {epicTickets.map(
-                                            ticket => (
-                                                <TicketCard
-                                                    key={ticket.id}
-                                                    ticket={ticket}
-                                                    selected={
-                                                        ticket.id ===
-                                                        editingTicketId
-                                                    }
-                                                    onSelect={() =>
-                                                        setEditingTicketId(
-                                                            ticket.id
-                                                        )
-                                                    }
-                                                />
-                                            )
-                                        )}
-
-                                        <AddTicketCard
-                                            onClick={() =>
-                                                addTicket(
-                                                    epic.id
+                                    {expandedEpics.has(epic.id) && (
+                                        <div className="backlog-ticket-list">
+                                            {epicTickets.map(
+                                                ticket => (
+                                                    <TicketCard
+                                                        key={ticket.id}
+                                                        ticket={ticket}
+                                                        selected={
+                                                            ticket.id ===
+                                                            editingTicketId
+                                                        }
+                                                        onSelect={() =>
+                                                            setEditingTicketId(
+                                                                ticket.id
+                                                            )
+                                                        }
+                                                    />
                                                 )
-                                            }
-                                        />
-                                    </div>
+                                            )}
+
+                                            <AddTicketCard
+                                                onClick={() =>
+                                                    addTicket(
+                                                        epic.id
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             );
                         }
