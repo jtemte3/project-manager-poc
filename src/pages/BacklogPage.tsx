@@ -4,6 +4,7 @@ import TicketCard from "../components/TicketCard";
 import EpicCard from "../components/EpicCard";
 import AddTicketCard from "../components/AddTicketCard";
 import TicketEditor from "../components/TicketEditor";
+import EpicEditor from "../components/EpicEditor";
 import { useProject } from "../hooks/useProject";
 
 export default function BacklogPage() {
@@ -16,6 +17,7 @@ export default function BacklogPage() {
     } = useProject();
 
     const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
+    const [editingEpicId, setEditingEpicId] = useState<string | null>(null);
 
     const toggleEpic = (epicId: string) => {
         setExpandedEpics(prev => {
@@ -34,14 +36,20 @@ export default function BacklogPage() {
             ticket => ticket.id === editingTicketId
         ) ?? null;
 
+    const editingEpic =
+        project?.epics.find(
+            epic => epic.id === editingEpicId
+        ) ?? null;
+
     useEffect(() => {
         function handleKeyDown(event: KeyboardEvent) {
             if (event.key === "Escape") {
                 setEditingTicketId(null);
+                setEditingEpicId(null);
             }
         }
 
-        if (selectedTicket) {
+        if (selectedTicket || editingEpic) {
             window.addEventListener(
                 "keydown",
                 handleKeyDown
@@ -54,7 +62,7 @@ export default function BacklogPage() {
                 handleKeyDown
             );
         };
-    }, [selectedTicket, setEditingTicketId]);
+    }, [selectedTicket, editingEpic, setEditingTicketId]);
 
     if (!project) {
         return null;
@@ -131,6 +139,11 @@ export default function BacklogPage() {
                                         epic={epic}
                                         expanded={expandedEpics.has(epic.id)}
                                         onToggle={() => toggleEpic(epic.id)}
+                                        onSelect={() =>
+                                            setEditingEpicId(
+                                                epic.id
+                                            )
+                                        }
                                     />
 
                                     {expandedEpics.has(epic.id) && (
@@ -219,6 +232,32 @@ export default function BacklogPage() {
                             ticket={selectedTicket}
                             onClose={() =>
                                 setEditingTicketId(null)
+                            }
+                        />
+                    </div>
+                </div>
+            )}
+
+            {editingEpic && (
+                <div
+                    className="epic-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Epic details"
+                    onClick={() =>
+                        setEditingEpicId(null)
+                    }
+                >
+                    <div
+                        className="epic-modal__surface"
+                        onClick={event =>
+                            event.stopPropagation()
+                        }
+                    >
+                        <EpicEditor
+                            epic={editingEpic}
+                            onClose={() =>
+                                setEditingEpicId(null)
                             }
                         />
                     </div>

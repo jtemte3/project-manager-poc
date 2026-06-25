@@ -1,25 +1,21 @@
-import { useState } from "react";
-
 import { type Epic } from "../models/Epic";
 
 import { useProject } from "../hooks/useProject";
-
-import EpicEditor from "./EpicEditor";
 
 interface Props {
     epic: Epic;
     expanded: boolean;
     onToggle: () => void;
+    onSelect?: () => void;
 }
 
 export default function EpicCard({
     epic,
+    expanded,
     onToggle,
+    onSelect,
 }: Props) {
-    const [editorOpen, setEditorOpen] =
-        useState(false);
-
-    const { project, deleteEpic } =
+    const { project } =
         useProject();
 
     const epicTickets =
@@ -90,37 +86,19 @@ export default function EpicCard({
                 </div>
 
                 <div className="epic-card__actions">
-                    <button
-                        type="button"
-                        onClick={event => {
-                            event.stopPropagation();
-                            setEditorOpen(!editorOpen);
-                        }}
-                    >
-                        {editorOpen
-                            ? "Close"
-                            : "Edit"}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={event => {
-                            event.stopPropagation();
-                            deleteEpic(epic.id);
-                        }}
-                    >
-                        Delete
-                    </button>
+                    {onSelect && (
+                        <button
+                            type="button"
+                            onClick={event => {
+                                event.stopPropagation();
+                                onSelect();
+                            }}
+                        >
+                            Edit
+                        </button>
+                    )}
                 </div>
             </div>
-
-            {editorOpen && (
-                <div className="epic-card__body">
-                    <EpicEditor
-                        epic={epic}
-                    />
-                </div>
-            )}
         </div>
     );
 }
