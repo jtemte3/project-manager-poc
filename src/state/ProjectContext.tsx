@@ -3,10 +3,31 @@ import { type Project } from "../models/Project";
 import { type Sprint } from "../models/Sprint";
 
 export interface ProjectContextType {
+    // Multi-project state
+    projects: Project[];
+
+    activeProjectId: string | null;
+
+    activeProject: Project | null;
+
+    // Project CRUD
+    createProject: (name: string) => void;
+
+    updateProject: (
+        projectId: string,
+        updates: Partial<Project>
+    ) => void;
+
+    deleteProject: (projectId: string) => void;
+
+    setActiveProject: (projectId: string | null) => void;
+
+    // Legacy single-project access (for backward compatibility)
     project: Project | null;
 
     setProject: (project: Project) => void;
 
+    // Ticket operations
     addTicket: (
         epicId?: string
     ) => void;
@@ -20,6 +41,7 @@ export interface ProjectContextType {
         ticketId: string
     ) => void;
 
+    // Sprint operations
     addSprint: (
         title: string,
         durationWeeks: Sprint["durationWeeks"]
@@ -51,12 +73,7 @@ export interface ProjectContextType {
         ticketId: string
     ) => void;
 
-    editingTicketId: string | null;
-
-    setEditingTicketId: (
-        ticketId: string | null
-    ) => void;
-
+    // Epic operations
     addEpic: () => void;
 
     updateEpic: (
@@ -66,6 +83,13 @@ export interface ProjectContextType {
 
     deleteEpic: (
         epicId: string
+    ) => void;
+
+    // Editing state
+    editingTicketId: string | null;
+
+    setEditingTicketId: (
+        ticketId: string | null
     ) => void;
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { v4 as uuid } from "uuid";
 
 import { ProjectContext } from "./ProjectContext";
@@ -11,8 +11,12 @@ import { sampleProject } from "../services/SampleProject";
 import { normalizeProjectState, syncSprintMetrics } from "../services/ProjectMetrics";
 
 import {
+    loadProjects,
+    saveProjects,
+    loadActiveProjectId,
+    saveActiveProjectId,
     loadProject,
-    saveProject,
+    clearProject,
 } from "../services/ProjectStorage";
 
 interface Props {
@@ -23,27 +27,110 @@ function nowIso() {
     return new Date().toISOString();
 }
 
+function makeEmptyProject(name: string): Project {
+    return normalizeProjectState({
+        ...sampleProject,
+        id: uuid(),
+        name,
+    });
+}
+
 export default function ProjectProvider({
     children,
 }: Props) {
-    const [project, setProject] = useState<Project>(() => {
-        const saved = loadProject();
+    const [projects, setProjects] = useState<Project[]>(() => {
+        const loaded = loadProjects();
 
-        return normalizeProjectState(saved ?? sampleProject);
+        // Migrate legacy single project if no multi-project data exists
+        if (loaded.length === 0) {
+            const legacy = loadProject();
+            if (legacy) {
+                clearProject();
+                return [normalizeProjectState(legacy)];
+            }
+        }
+
+        return loaded;
     });
 
-    function commitProject(next: Project) {
-        setProject(syncSprintMetrics(next));
+    const [activeProjectId, setActiveProjectIdState] = useState<string | null>(() => {
+        const saved = loadActiveProjectId();
+        return saved && projects.find(p => p.id === saved) ? saved : (projects[0]?.id ?? null);
+    });
+
+    // Save projects whenever they change
+    useEffect(() => {
+        saveProjects(projects);
+    }, [projects]);
+
+    // Save active project id whenever it changes
+    useEffect(() => {
+        saveActiveProjectId(activeProjectId);
+    }, [activeProjectId]);
+
+    // Recompute active project id if current one was deleted
+    useEffect(() => {
+        if (activeProjectId && !projects.find(p => p.id === activeProjectId)) {
+            setActiveProjectIdState(projects[0]?.id ?? null);
+        }
+    }, [projects, activeProjectId]);
+
+    const activeProject = useMemo(
+        () => projects.find(p => p.id === activeProjectId) ?? null,
+        [projects, activeProjectId]
+    );
+
+    // --- Project CRUD ---
+
+    function createProject(name: string) {
+        const newProject = makeEmptyProject(name);
+        setProjects(prev => [...prev, newProject]);
+        setActiveProjectIdState(newProject.id);
     }
 
-    useEffect(() => {
-        saveProject(project);
-    }, [project]);
+    function updateProject(
+        projectId: string,
+        updates: Partial<Project>
+    ) {
+        setProjects(prev =>
+            prev.map(project =>
+                project.id === projectId
+                    ? syncSprintMetrics({ ...project, ...updates })
+                    : project
+            )
+        );
+    }
+
+    function deleteProject(projectId: string) {
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+    }
+
+    function setActiveProject(projectId: string | null) {
+        setActiveProjectIdState(projectId);
+    }
+
+    // --- Commit helper for active project ---
+
+    function commitActiveProject(updates: Partial<Project>) {
+        if (!activeProjectId) return;
+
+        setProjects(prev =>
+            prev.map(project =>
+                project.id === activeProjectId
+                    ? syncSprintMetrics({ ...project, ...updates })
+                    : project
+            )
+        );
+    }
+
+    // --- Ticket, Sprint, Epic operations (operate on active project) ---
 
     const [editingTicketId, setEditingTicketId] =
         useState<string | null>(null);
 
     function addEpic() {
+        if (!activeProject) return;
+
         const newEpic: Epic = {
             id: uuid(),
             name: "New Epic",
@@ -51,9 +138,8 @@ export default function ProjectProvider({
             color: "#2196F3",
         };
 
-        commitProject({
-            ...project,
-            epics: [...project.epics, newEpic],
+        commitActiveProject({
+            epics: [...activeProject.epics, newEpic],
         });
     }
 
@@ -61,9 +147,10 @@ export default function ProjectProvider({
         epicId: string,
         updates: Record<string, any>
     ) {
-        commitProject({
-            ...project,
-            epics: project.epics.map(epic =>
+        if (!activeProject) return;
+
+        commitActiveProject({
+            epics: activeProject.epics.map(epic =>
                 epic.id === epicId
                     ? {
                           ...epic,
@@ -75,12 +162,13 @@ export default function ProjectProvider({
     }
 
     function deleteEpic(epicId: string) {
-        commitProject({
-            ...project,
-            epics: project.epics.filter(
+        if (!activeProject) return;
+
+        commitActiveProject({
+            epics: activeProject.epics.filter(
                 epic => epic.id !== epicId
             ),
-            tickets: project.tickets.map(ticket =>
+            tickets: activeProject.tickets.map(ticket =>
                 ticket.epicId === epicId
                     ? {
                           ...ticket,
@@ -92,6 +180,8 @@ export default function ProjectProvider({
     }
 
     function addTicket(epicId?: string) {
+        if (!activeProject) return;
+
         const newTicket = {
             id: uuid(),
             title: "New Ticket",
@@ -103,9 +193,8 @@ export default function ProjectProvider({
             checklist: [],
         };
 
-        commitProject({
-            ...project,
-            tickets: [...project.tickets, newTicket],
+        commitActiveProject({
+            tickets: [...activeProject.tickets, newTicket],
         });
 
         setEditingTicketId(newTicket.id);
@@ -115,9 +204,10 @@ export default function ProjectProvider({
         ticketId: string,
         updates: Record<string, any>
     ) {
-        commitProject({
-            ...project,
-            tickets: project.tickets.map(ticket => {
+        if (!activeProject) return;
+
+        commitActiveProject({
+            tickets: activeProject.tickets.map(ticket => {
                 if (ticket.id !== ticketId) {
                     return ticket;
                 }
@@ -144,12 +234,13 @@ export default function ProjectProvider({
     }
 
     function deleteTicket(ticketId: string) {
-        commitProject({
-            ...project,
-            tickets: project.tickets.filter(
+        if (!activeProject) return;
+
+        commitActiveProject({
+            tickets: activeProject.tickets.filter(
                 ticket => ticket.id !== ticketId
             ),
-            sprints: project.sprints.map(sprint => ({
+            sprints: activeProject.sprints.map(sprint => ({
                 ...sprint,
                 ticketIds: sprint.ticketIds.filter(
                     id => id !== ticketId
@@ -162,6 +253,8 @@ export default function ProjectProvider({
         title: string,
         durationWeeks: Sprint["durationWeeks"]
     ) {
+        if (!activeProject) return "";
+
         const newSprint: Sprint = {
             id: uuid(),
             title,
@@ -177,9 +270,8 @@ export default function ProjectProvider({
             ticketIds: [],
         };
 
-        commitProject({
-            ...project,
-            sprints: [...project.sprints, newSprint],
+        commitActiveProject({
+            sprints: [...activeProject.sprints, newSprint],
         });
 
         return newSprint.id;
@@ -189,9 +281,10 @@ export default function ProjectProvider({
         sprintId: string,
         updates: Partial<Sprint>
     ) {
-        commitProject({
-            ...project,
-            sprints: project.sprints.map(sprint =>
+        if (!activeProject) return;
+
+        commitActiveProject({
+            sprints: activeProject.sprints.map(sprint =>
                 sprint.id === sprintId
                     ? {
                           ...sprint,
@@ -203,7 +296,9 @@ export default function ProjectProvider({
     }
 
     function startSprint(sprintId: string) {
-        const sprint = project.sprints.find(
+        if (!activeProject) return;
+
+        const sprint = activeProject.sprints.find(
             item => item.id === sprintId
         );
 
@@ -217,9 +312,8 @@ export default function ProjectProvider({
             plannedEnd.getDate() + sprint.durationWeeks * 7
         );
 
-        commitProject({
-            ...project,
-            sprints: project.sprints.map(item =>
+        commitActiveProject({
+            sprints: activeProject.sprints.map(item =>
                 item.id === sprintId
                     ? {
                           ...item,
@@ -237,11 +331,12 @@ export default function ProjectProvider({
     }
 
     function endSprint(sprintId: string) {
+        if (!activeProject) return;
+
         const endDate = nowIso().slice(0, 10);
 
-        commitProject({
-            ...project,
-            sprints: project.sprints.map(sprint =>
+        commitActiveProject({
+            sprints: activeProject.sprints.map(sprint =>
                 sprint.id === sprintId
                     ? {
                           ...sprint,
@@ -255,12 +350,13 @@ export default function ProjectProvider({
     }
 
     function deleteSprint(sprintId: string) {
-        commitProject({
-            ...project,
-            sprints: project.sprints.filter(
+        if (!activeProject) return;
+
+        commitActiveProject({
+            sprints: activeProject.sprints.filter(
                 sprint => sprint.id !== sprintId
             ),
-            tickets: project.tickets.map(ticket =>
+            tickets: activeProject.tickets.map(ticket =>
                 ticket.sprintId === sprintId
                     ? {
                           ...ticket,
@@ -277,7 +373,9 @@ export default function ProjectProvider({
         ticketId: string,
         sprintId: string
     ) {
-        const ticket = project.tickets.find(
+        if (!activeProject) return;
+
+        const ticket = activeProject.tickets.find(
             item => item.id === ticketId
         );
 
@@ -285,9 +383,8 @@ export default function ProjectProvider({
             return;
         }
 
-        commitProject({
-            ...project,
-            tickets: project.tickets.map(item =>
+        commitActiveProject({
+            tickets: activeProject.tickets.map(item =>
                 item.id === ticketId
                     ? {
                           ...item,
@@ -299,7 +396,7 @@ export default function ProjectProvider({
                       }
                     : item
             ),
-            sprints: project.sprints.map(sprint =>
+            sprints: activeProject.sprints.map(sprint =>
                 sprint.id === sprintId
                     ? {
                           ...sprint,
@@ -320,7 +417,9 @@ export default function ProjectProvider({
     }
 
     function removeTicketFromSprint(ticketId: string) {
-        const ticket = project.tickets.find(
+        if (!activeProject) return;
+
+        const ticket = activeProject.tickets.find(
             item => item.id === ticketId
         );
 
@@ -328,9 +427,8 @@ export default function ProjectProvider({
             return;
         }
 
-        commitProject({
-            ...project,
-            tickets: project.tickets.map(item =>
+        commitActiveProject({
+            tickets: activeProject.tickets.map(item =>
                 item.id === ticketId
                     ? {
                           ...item,
@@ -340,7 +438,7 @@ export default function ProjectProvider({
                       }
                     : item
             ),
-            sprints: project.sprints.map(sprint => ({
+            sprints: activeProject.sprints.map(sprint => ({
                 ...sprint,
                 ticketIds: sprint.ticketIds.filter(
                     id => id !== ticketId
@@ -352,16 +450,27 @@ export default function ProjectProvider({
     return (
         <ProjectContext.Provider
             value={{
-                project,
-                setProject: commitProject,
+                // Multi-project state
+                projects,
+                activeProjectId,
+                activeProject,
+
+                // Project CRUD
+                createProject,
+                updateProject,
+                deleteProject,
+                setActiveProject,
+
+                // Legacy single-project access
+                project: activeProject,
+                setProject: commitActiveProject as any,
+
+                // Ticket operations
                 addTicket,
                 updateTicket,
-                editingTicketId,
-                setEditingTicketId,
                 deleteTicket,
-                addEpic,
-                updateEpic,
-                deleteEpic,
+
+                // Sprint operations
                 addSprint,
                 updateSprint,
                 startSprint,
@@ -369,6 +478,15 @@ export default function ProjectProvider({
                 deleteSprint,
                 assignTicketToSprint,
                 removeTicketFromSprint,
+
+                // Epic operations
+                addEpic,
+                updateEpic,
+                deleteEpic,
+
+                // Editing state
+                editingTicketId,
+                setEditingTicketId,
             }}
         >
             {children}

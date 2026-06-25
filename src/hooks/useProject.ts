@@ -13,7 +13,7 @@ export function useProject() {
 
     if (!context) {
         throw new Error(
-            "ProjectContext missing"
+            "useProject must be used within a ProjectProvider"
         );
     }
 
