@@ -35,6 +35,9 @@ export default function SprintPlanningPage() {
         useState<string | null>(null);
     const [selectedSprintTicketId, setSelectedSprintTicketId] =
         useState<string | null>(null);
+    const [selectedEpicId, setSelectedEpicId] =
+        useState<string | null>(null);
+    const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (!project) {
@@ -69,6 +72,18 @@ export default function SprintPlanningPage() {
         setSelectedBacklogTicketId(null);
         setSelectedSprintTicketId(null);
     }, [selectedSprintId]);
+
+    const toggleEpic = (epicId: string) => {
+        setExpandedEpics(prev => {
+            const next = new Set(prev);
+            if (next.has(epicId)) {
+                next.delete(epicId);
+            } else {
+                next.add(epicId);
+            }
+            return next;
+        });
+    };
 
     if (!project) {
         return null;
@@ -239,7 +254,14 @@ export default function SprintPlanningPage() {
                                 key={epic.id}
                                 className="backlog-epic-group"
                             >
-                                <div className="sprint-epic-header">
+                                <button
+                                    type="button"
+                                    className={`sprint-epic-header${epic.id === selectedEpicId ? " sprint-epic-header--selected" : ""}`}
+                                    onClick={() => {
+                                        setSelectedEpicId(epic.id);
+                                        toggleEpic(epic.id);
+                                    }}
+                                >
                                     <span
                                         className="sprint-epic-swatch"
                                         style={{
@@ -255,30 +277,32 @@ export default function SprintPlanningPage() {
                                             {tickets.length} tickets
                                         </div>
                                     </div>
-                                </div>
+                                </button>
 
-                                <div className="backlog-ticket-list">
-                                    {tickets.map(
-                                        ticket => (
-                                            <TicketCard
-                                                key={ticket.id}
-                                                ticket={ticket}
-                                                selected={
-                                                    ticket.id ===
-                                                    selectedBacklogTicketId
-                                                }
-                                                onSelect={() => {
-                                                    setSelectedBacklogTicketId(
-                                                        ticket.id
-                                                    );
-                                                    setSelectedSprintTicketId(
-                                                        null
-                                                    );
-                                                }}
-                                            />
-                                        )
-                                    )}
-                                </div>
+                                {expandedEpics.has(epic.id) && (
+                                    <div className="backlog-ticket-list">
+                                        {tickets.map(
+                                            ticket => (
+                                                <TicketCard
+                                                    key={ticket.id}
+                                                    ticket={ticket}
+                                                    selected={
+                                                        ticket.id ===
+                                                        selectedBacklogTicketId
+                                                    }
+                                                    onSelect={() => {
+                                                        setSelectedBacklogTicketId(
+                                                            ticket.id
+                                                        );
+                                                        setSelectedSprintTicketId(
+                                                            null
+                                                        );
+                                                    }}
+                                                />
+                                            )
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )
                     )}

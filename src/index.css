@@ -577,6 +577,22 @@ button:focus-visible,
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 10px;
+}
+
+.sprint-epic-header:hover {
+  background: #f7f9fd;
+  border-color: #d8ddeb;
+}
+
+.sprint-epic-header--selected {
+  background: #eef3ff;
+  border-color: #5b7cff;
 }
 
 .sprint-epic-swatch {
