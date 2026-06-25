@@ -59,19 +59,6 @@ export default function TicketEditor({
                     >
                         Close
                     </button>
-
-                    <button
-                        type="button"
-                        className="ticket-detail__danger"
-                        onClick={() => {
-                            deleteTicket(
-                                ticket.id
-                            );
-                            setEditingTicketId(null);
-                        }}
-                    >
-                        Delete
-                    </button>
                 </div>
             </div>
 
@@ -211,6 +198,21 @@ export default function TicketEditor({
             </FormField>
 
             <ChecklistEditor ticket={ticket} />
+
+            <div className="ticket-detail__danger-zone">
+                <button
+                    type="button"
+                    className="ticket-detail__danger"
+                    onClick={() => {
+                        deleteTicket(
+                            ticket.id
+                        );
+                        setEditingTicketId(null);
+                    }}
+                >
+                    Delete
+                </button>
+            </div>
         </div>
     );
 }

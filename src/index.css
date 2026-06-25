@@ -839,6 +839,15 @@ button:focus-visible,
   color: #b3261e;
 }
 
+.ticket-detail__danger-zone {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e4e8f2;
+  display: flex;
+  justify-content: flex-end;
+}
+
+
 .ticket-detail__danger:hover {
   background: #ffe9e6;
 }
