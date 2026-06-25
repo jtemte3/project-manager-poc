@@ -304,7 +304,7 @@ button:focus-visible,
 .metrics-ticket-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 }
 
 .metrics-empty-state {
@@ -348,7 +348,7 @@ button:focus-visible,
 .kanban-lane__body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
   min-height: 220px;
   padding: 14px;
 }
@@ -607,7 +607,7 @@ button:focus-visible,
   border-left: 1px solid #d8ddeb;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 3px;
 }
 
 .backlog-unassigned {
@@ -628,8 +628,9 @@ button:focus-visible,
   border-left-width: 6px;
   border-radius: 14px;
   background: #ffffff;
-  padding: 14px 16px;
+  padding: 10px 16px;
   box-shadow: 0 1px 0 rgba(31, 42, 68, 0.02);
+  margin-bottom: 4px;
 }
 
 .epic-card__header {
@@ -669,7 +670,7 @@ button:focus-visible,
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 7px 16px;
   border: 1px solid #d8ddeb;
   border-radius: 14px;
   background: #ffffff;
@@ -744,7 +745,7 @@ button:focus-visible,
 
 .add-ticket-card {
   width: 100%;
-  padding: 14px 16px;
+  padding: 7px 16px;
   border: 1px dashed #aab6cb;
   border-radius: 14px;
   background: #f9fbff;

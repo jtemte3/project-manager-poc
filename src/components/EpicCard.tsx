@@ -34,15 +34,15 @@ export default function EpicCard({
         >
             <div className="epic-card__header">
                 <div>
-                    <div className="epic-card__eyebrow">
+                    <span className="epic-card__eyebrow">
                         Epic
-                    </div>
+                    </span>
+                    <span style={{marginLeft:"8px"}} className="epic-card__meta">
+                        {ticketCount} tickets
+                    </span>
                     <h2 className="epic-card__title">
                         {epic.name}
                     </h2>
-                    <div className="epic-card__meta">
-                        {ticketCount} tickets
-                    </div>
                 </div>
 
                 <div className="epic-card__actions">

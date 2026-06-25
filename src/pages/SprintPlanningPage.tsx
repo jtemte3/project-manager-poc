@@ -226,14 +226,6 @@ export default function SprintPlanningPage() {
                             Select backlog tickets and move them into a sprint.
                         </div>
                     </div>
-
-                    <button
-                        className="icon-button"
-                        type="button"
-                        aria-label="More actions"
-                    >
-                        ...
-                    </button>
                 </div>
 
                 <div className="backlog-scroll">

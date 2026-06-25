@@ -38,11 +38,14 @@ export default function EpicEditor({
 
             />
 
+            <span style={{marginLeft:"8px"}}>Color: </span> 
             <input
 
                 type="color"
 
                 value={epic.color}
+
+                style={{backgroundColor: epic.color, height: "10px", marginLeft:"8px", verticalAlign: "text-top"}}
 
                 onChange={e =>
                     updateEpic(
