@@ -14,7 +14,6 @@ interface Props {
 
 export default function EpicCard({
     epic,
-    expanded,
     onToggle,
 }: Props) {
     const [editorOpen, setEditorOpen] =
@@ -23,11 +22,36 @@ export default function EpicCard({
     const { project, deleteEpic } =
         useProject();
 
-    const ticketCount =
+    const epicTickets =
         project?.tickets.filter(
-            ticket =>
-                ticket.epicId === epic.id
-        ).length ?? 0;
+            ticket => ticket.epicId === epic.id
+        ) ?? [];
+
+    const ticketCount = epicTickets.length;
+
+    const totalComplexity = epicTickets.reduce(
+        (sum, ticket) => sum + ticket.complexity,
+        0
+    );
+
+    const doneTickets = epicTickets.filter(
+        ticket => ticket.status === "Done"
+    );
+
+    const doneComplexity = doneTickets.reduce(
+        (sum, ticket) => sum + ticket.complexity,
+        0
+    );
+
+    const ticketCompletion =
+        ticketCount > 0
+            ? Math.round((doneTickets.length / ticketCount) * 100)
+            : 0;
+
+    const complexityCompletion =
+        totalComplexity > 0
+            ? Math.round((doneComplexity / totalComplexity) * 100)
+            : 0;
 
     return (
         <div
@@ -46,7 +70,19 @@ export default function EpicCard({
                         Epic
                     </span>
                     <span style={{marginLeft:"8px"}} className="epic-card__meta">
-                        {ticketCount} tickets
+                        Tickets: {ticketCount} 
+                    </span>
+                    <span style={{marginLeft:"8px"}} className="epic-card__meta">
+                        Complexity: {totalComplexity}
+                    </span>
+                    <span style={{marginLeft:"8px", paddingLeft:"8px", borderLeft:"1px solid #e4e8f2"}} className="epic-card__meta">
+                        <b>Percent Complete:</b>
+                    </span>
+                    <span style={{marginLeft:"8px"}} className="epic-card__meta">
+                        Tickets: {ticketCompletion}% 
+                    </span>
+                    <span style={{marginLeft:"8px"}} className="epic-card__meta">
+                        Complexity: {complexityCompletion}% 
                     </span>
                     <h2 className="epic-card__title">
                         {epic.name}

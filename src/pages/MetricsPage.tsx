@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
     CartesianGrid,
     Legend,
@@ -17,6 +17,60 @@ import { buildBurndownData, type BurndownMode } from "../services/Burndown";
 
 function formatDate(date: string | null | undefined) {
     return date ?? "—";
+}
+
+function CompletionDot({ cx, cy, stroke, shape, payload }: any) {
+    if (!payload.completions || payload.completions.length === 0) {
+        return null;
+    }
+    return (
+        <circle
+            cx={cx}
+            cy={cy}
+            r={6}
+            fill={stroke}
+            stroke="#fff"
+            strokeWidth={2}
+        />
+    );
+}
+
+function CustomTooltip({ active, payload, label }: any) {
+    if (!active || !payload || payload.length === 0) {
+        return null;
+    }
+
+    const data = payload[0].payload;
+    const completions = data.completions;
+
+    return (
+        <div className="custom-tooltip">
+            <p className="tooltip-label">Day {label}</p>
+            <p className="tooltip-value">
+                Actual: <strong>{payload[0].value}</strong>
+            </p>
+            {payload.length > 1 && (
+                <p className="tooltip-value">
+                    Ideal: <strong>{payload[1].value}</strong>
+                </p>
+            )}
+            {completions && completions.length > 0 && (
+                <div className="tooltip-completions">
+                    <p className="tooltip-completions-title">
+                        Completed:
+                    </p>
+                    {completions.map((c: any) => (
+                        <p key={c.ticketId} className="tooltip-completion-item">
+                            {c.title}
+                            {c.complexity > 0
+                                ? ` (${c.complexity})`
+                                : ""}
+                        </p>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function MetricsPage() {
@@ -308,7 +362,7 @@ export default function MetricsPage() {
                                     position: "insideLeft",
                                 }}
                             />
-                            <Tooltip />
+                            <Tooltip content={<CustomTooltip />} />
                             <Legend />
                             <Line
                                 type="monotone"
@@ -316,7 +370,7 @@ export default function MetricsPage() {
                                 name="Actual Remaining"
                                 stroke="#5b7cff"
                                 strokeWidth={3}
-                                dot={false}
+                                dot={CompletionDot}
                             />
                             <Line
                                 type="monotone"

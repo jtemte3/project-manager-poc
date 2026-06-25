@@ -725,6 +725,7 @@ button:focus-visible,
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -933,4 +934,50 @@ button:focus-visible,
   .ticket-detail__grid {
     grid-template-columns: 1fr;
   }
+
+  .custom-tooltip {
+  background: #ffffff;
+  border: 1px solid #d8ddeb;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 24px rgba(31, 42, 68, 0.12);
+  font-size: 0.88rem;
+  color: #1f2a44;
+}
+
+.tooltip-label {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #50607c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+}
+
+.tooltip-value {
+  margin: 0 0 4px;
+  line-height: 1.4;
+}
+
+.tooltip-completions {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e4e8f2;
+}
+
+.tooltip-completions-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #2f6b2f;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tooltip-completion-item {
+  margin: 0;
+  padding: 2px 0;
+  color: #1f2a44;
+  line-height: 1.35;
+}
 }
