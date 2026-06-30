@@ -28,6 +28,13 @@ const LANE_TO_STATUS: Record<LaneId, Ticket["status"]> = {
     done: "Done",
 };
 
+const STATUS_TO_LANE: Record<Ticket["status"], LaneId> = {
+    Backlog: "todo",
+    Todo: "todo",
+    InProgress: "inProgress",
+    Done: "done",
+};
+
 function isDefined<T>(value: T | undefined | null): value is T {
     return value != null;
 }
@@ -37,39 +44,44 @@ function sumComplexity(tickets: Array<{ complexity: number }>) {
 }
 
 /**
- * Rebuild board from current sprint tickets, preserving drag order
- * from the persisted project.board when available.
+ * Rebuild board from current sprint tickets.
+ * Lane assignment comes from ticket status.
+ * Within-lane order is preserved from the persisted board.
  */
 function rebuildBoard(
-    sprintTicketIds: string[],
+    sprintTickets: Ticket[],
     persistedBoard: Board | undefined
 ): Board {
     if (!persistedBoard) {
-        return {
-            laneOrder: {
-                todo: [...sprintTicketIds],
-                inProgress: [],
-                done: [],
-            },
-        };
+        return buildBoardFromTickets(sprintTickets);
     }
+
+    // Build a combined ordering from persisted board lanes
+    const persistedOrder = [
+        ...persistedBoard.laneOrder.todo,
+        ...persistedBoard.laneOrder.inProgress,
+        ...persistedBoard.laneOrder.done,
+    ];
 
     const todo: string[] = [];
     const inProgress: string[] = [];
     const done: string[] = [];
 
-    for (const id of sprintTicketIds) {
-        if (persistedBoard.laneOrder.todo.includes(id)) {
-            todo.push(id);
-        } else if (persistedBoard.laneOrder.inProgress.includes(id)) {
-            inProgress.push(id);
-        } else if (persistedBoard.laneOrder.done.includes(id)) {
-            done.push(id);
-        } else {
-            // New ticket not in persisted board — defaults to To Do
-            todo.push(id);
-        }
+    for (const ticket of sprintTickets) {
+        const lane = STATUS_TO_LANE[ticket.status] ?? "todo";
+
+        if (lane === "todo") todo.push(ticket.id);
+        else if (lane === "inProgress") inProgress.push(ticket.id);
+        else done.push(ticket.id);
     }
+
+    // Sort each lane by persisted order (stable — new tickets end last)
+    const sortByPersisted = (a: string, b: string) =>
+        persistedOrder.indexOf(a) - persistedOrder.indexOf(b);
+
+    todo.sort(sortByPersisted);
+    inProgress.sort(sortByPersisted);
+    done.sort(sortByPersisted);
 
     return {
         laneOrder: { todo, inProgress, done },
@@ -108,21 +120,21 @@ export default function KanbanPage() {
             )
             : [];
 
-    // Stable key that changes when sprint ticket membership changes
+    // Stable key that changes when sprint ticket membership OR status changes
     const sprintTicketKey = activeSprint?.id
-        ? `${activeSprint.id}:${activeSprint.ticketIds.join(",")}`
+        ? `${activeSprint.id}:${activeSprintTickets.map(t => `${t.id}:${t.status}`).join(",")}`
         : "";
 
     // -------------------------
-    // Rebuild board whenever sprint tickets change
-    // Preserves drag order from persisted project.board
+    // Rebuild board whenever sprint tickets or statuses change
+    // Preserves within-lane drag order from persisted project.board
     // -------------------------
     useEffect(() => {
         if (!activeSprint) return;
 
         setBoard(() => {
             return rebuildBoard(
-                activeSprint.ticketIds,
+                activeSprintTickets,
                 project?.board
             );
         });
