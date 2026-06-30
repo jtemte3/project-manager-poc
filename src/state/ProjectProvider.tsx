@@ -10,6 +10,8 @@ import { type Sprint } from "../models/Sprint";
 import { sampleProject } from "../services/SampleProject";
 import { normalizeProjectState, syncSprintMetrics } from "../services/ProjectMetrics";
 
+import { buildBoardFromTickets } from "../utils/buildBoardFromTickets";
+
 import {
     loadProjects,
     saveProjects,
@@ -153,9 +155,9 @@ export default function ProjectProvider({
             epics: activeProject.epics.map(epic =>
                 epic.id === epicId
                     ? {
-                          ...epic,
-                          ...updates,
-                      }
+                        ...epic,
+                        ...updates,
+                    }
                     : epic
             ),
         });
@@ -171,9 +173,9 @@ export default function ProjectProvider({
             tickets: activeProject.tickets.map(ticket =>
                 ticket.epicId === epicId
                     ? {
-                          ...ticket,
-                          epicId: undefined,
-                      }
+                        ...ticket,
+                        epicId: undefined,
+                    }
                     : ticket
             ),
         });
@@ -287,9 +289,9 @@ export default function ProjectProvider({
             sprints: activeProject.sprints.map(sprint =>
                 sprint.id === sprintId
                     ? {
-                          ...sprint,
-                          ...updates,
-                      }
+                        ...sprint,
+                        ...updates,
+                    }
                     : sprint
             ),
         });
@@ -307,26 +309,37 @@ export default function ProjectProvider({
         }
 
         const startDate = new Date();
+
         const plannedEnd = new Date(startDate);
+
         plannedEnd.setDate(
             plannedEnd.getDate() + sprint.durationWeeks * 7
         );
 
+        const updatedSprints = activeProject.sprints.map(item =>
+            item.id === sprintId
+                ? {
+                    ...item,
+                    active: true,
+                    archived: false,
+                    startDate: startDate.toISOString().slice(0, 10),
+                    endDate: plannedEnd.toISOString().slice(0, 10),
+                }
+                : { ...item, active: false }
+        );
+
+        // Build the initial board for this sprint
+        const sprintTickets = activeProject.tickets.filter(
+            ticket =>
+                sprint.ticketIds.includes(ticket.id)
+        );
+
+        const board =
+            buildBoardFromTickets(sprintTickets);
+
         commitActiveProject({
-            sprints: activeProject.sprints.map(item =>
-                item.id === sprintId
-                    ? {
-                          ...item,
-                          active: true,
-                          archived: false,
-                          startDate: startDate.toISOString().slice(0, 10),
-                          endDate: plannedEnd.toISOString().slice(0, 10),
-                      }
-                    : {
-                          ...item,
-                          active: false,
-                      }
-            ),
+            sprints: updatedSprints,
+            board,
         });
     }
 
@@ -335,17 +348,20 @@ export default function ProjectProvider({
 
         const endDate = nowIso().slice(0, 10);
 
-        commitActiveProject({
-            sprints: activeProject.sprints.map(sprint =>
+        const updatedSprints = activeProject.sprints.map(sprint =>
                 sprint.id === sprintId
                     ? {
-                          ...sprint,
-                          active: false,
-                          archived: true,
-                          endDate,
-                      }
+                        ...sprint,
+                        active: false,
+                        archived: true,
+                        endDate,
+                    }
                     : sprint
-            ),
+            );
+
+        commitActiveProject({
+            sprints: updatedSprints,
+            board: null,
         });
     }
 
@@ -355,16 +371,6 @@ export default function ProjectProvider({
         commitActiveProject({
             sprints: activeProject.sprints.filter(
                 sprint => sprint.id !== sprintId
-            ),
-            tickets: activeProject.tickets.map(ticket =>
-                ticket.sprintId === sprintId
-                    ? {
-                          ...ticket,
-                          sprintId: undefined,
-                          status: "Backlog" as const,
-                          doneAt: null,
-                      }
-                    : ticket
             ),
         });
     }
@@ -387,31 +393,31 @@ export default function ProjectProvider({
             tickets: activeProject.tickets.map(item =>
                 item.id === ticketId
                     ? {
-                          ...item,
-                          sprintId,
-                          status:
-                              item.status === "Backlog"
-                                  ? "Todo"
-                                  : item.status,
-                      }
+                        ...item,
+                        sprintId,
+                        status:
+                            item.status === "Backlog"
+                                ? "Todo"
+                                : item.status,
+                    }
                     : item
             ),
             sprints: activeProject.sprints.map(sprint =>
                 sprint.id === sprintId
                     ? {
-                          ...sprint,
-                          ticketIds: sprint.ticketIds.includes(
-                              ticketId
-                          )
-                              ? sprint.ticketIds
-                              : [...sprint.ticketIds, ticketId],
-                      }
+                        ...sprint,
+                        ticketIds: sprint.ticketIds.includes(
+                            ticketId
+                        )
+                            ? sprint.ticketIds
+                            : [...sprint.ticketIds, ticketId],
+                    }
                     : {
-                          ...sprint,
-                          ticketIds: sprint.ticketIds.filter(
-                              id => id !== ticketId
-                          ),
-                      }
+                        ...sprint,
+                        ticketIds: sprint.ticketIds.filter(
+                            id => id !== ticketId
+                        ),
+                    }
             ),
         });
     }
@@ -431,11 +437,11 @@ export default function ProjectProvider({
             tickets: activeProject.tickets.map(item =>
                 item.id === ticketId
                     ? {
-                          ...item,
-                          sprintId: undefined,
-                          status: "Backlog" as const,
-                          doneAt: null,
-                      }
+                        ...item,
+                        sprintId: undefined,
+                        status: "Backlog" as const,
+                        doneAt: null,
+                    }
                     : item
             ),
             sprints: activeProject.sprints.map(sprint => ({
@@ -464,6 +470,7 @@ export default function ProjectProvider({
                 // Legacy single-project access
                 project: activeProject,
                 setProject: commitActiveProject as any,
+                commitActiveProject,
 
                 // Ticket operations
                 addTicket,

@@ -29,7 +29,7 @@ function sumComplexity(tickets: Array<{ complexity: number }>) {
 }
 
 export default function KanbanPage() {
-    const { project, updateTicket } = useProject();
+    const { project, updateTicket, commitActiveProject } = useProject();
 
     const [selectedTicketId, setSelectedTicketId] =
         useState<string | null>(null);
@@ -60,7 +60,6 @@ export default function KanbanPage() {
         project && activeSprint
             ? project.tickets.filter(
                 t =>
-                    t.sprintId === activeSprint.id ||
                     activeSprint.ticketIds.includes(t.id)
             )
             : [];
@@ -232,6 +231,7 @@ export default function KanbanPage() {
 
                 <section className="kanban-board">
                     <KanbanLane
+                        laneId="todo"
                         title="To Do"
                         tickets={todoTickets}
                         selectedTicketId={selectedTicketId}
@@ -239,6 +239,7 @@ export default function KanbanPage() {
                     />
 
                     <KanbanLane
+                        laneId="inProgress"
                         title="In Progress"
                         tickets={inProgressTickets}
                         selectedTicketId={selectedTicketId}
@@ -246,6 +247,7 @@ export default function KanbanPage() {
                     />
 
                     <KanbanLane
+                        laneId="done"
                         title="Done"
                         tickets={doneTickets}
                         selectedTicketId={selectedTicketId}

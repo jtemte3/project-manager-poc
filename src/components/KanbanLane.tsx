@@ -1,3 +1,5 @@
+import { useDroppable } from "@dnd-kit/core";
+
 import {
     SortableContext,
     verticalListSortingStrategy,
@@ -6,21 +8,37 @@ import {
 import SortableTicketCard from "./SortableTicketCard";
 import { type Ticket } from "../models/Ticket";
 
+export type LaneId =
+    | "todo"
+    | "inProgress"
+    | "done";
+
 interface Props {
+    laneId: LaneId;
+
     title: string;
+
     tickets: Ticket[];
 
     selectedTicketId: string | null;
 
-    onSelectTicket: (ticketId: string) => void;
+    onSelectTicket: (
+        ticketId: string
+    ) => void;
 }
 
 export default function KanbanLane({
+    laneId,
     title,
     tickets,
     selectedTicketId,
     onSelectTicket,
 }: Props) {
+
+    const { setNodeRef } = useDroppable({
+        id: laneId,
+    });
+
     return (
         <div className="kanban-lane">
 
@@ -36,7 +54,10 @@ export default function KanbanLane({
                 items={tickets.map(t => t.id)}
                 strategy={verticalListSortingStrategy}
             >
-                <div className="kanban-lane__body">
+                <div
+                    ref={setNodeRef}
+                    className="kanban-lane__body"
+                >
 
                     {tickets.map(ticket => (
 
@@ -54,6 +75,7 @@ export default function KanbanLane({
                     ))}
 
                 </div>
+
             </SortableContext>
 
         </div>

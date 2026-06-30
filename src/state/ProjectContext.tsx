@@ -18,6 +18,10 @@ export interface ProjectContextType {
         updates: Partial<Project>
     ) => void;
 
+    commitActiveProject: (
+    updates: Partial<Project>
+) => void;
+
     deleteProject: (projectId: string) => void;
 
     setActiveProject: (projectId: string | null) => void;

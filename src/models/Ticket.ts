@@ -12,8 +12,6 @@ export interface Ticket {
 
   complexity: number;
 
-  sprintId?: string;
-
   doneAt: string | null;
 
   status:
