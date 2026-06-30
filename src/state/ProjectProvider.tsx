@@ -111,6 +111,15 @@ export default function ProjectProvider({
         setActiveProjectIdState(projectId);
     }
 
+    function importProject(project: Project) {
+        const normalized = normalizeProjectState({
+            ...project,
+            id: uuid(), // new id to avoid collisions
+        });
+        setProjects(prev => [...prev, normalized]);
+        setActiveProjectIdState(normalized.id);
+    }
+
     // --- Commit helper for active project ---
 
     function commitActiveProject(updates: Partial<Project>) {
@@ -466,6 +475,7 @@ export default function ProjectProvider({
                 updateProject,
                 deleteProject,
                 setActiveProject,
+                importProject,
 
                 // Legacy single-project access
                 project: activeProject,

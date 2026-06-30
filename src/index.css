@@ -1036,3 +1036,28 @@ button:focus-visible,
   border: 2px dashed #5b7cff;
   border-radius: 12px;
 }
+.create-project-form__button--import {
+    background: #6c7891;
+    border-color: #6c7891;
+}
+
+.create-project-form__button--import:hover {
+    background: #5a6678;
+    border-color: #5a6678;
+}
+
+.create-project-form__file-input {
+    display: none;
+}
+
+.project-card__download {
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 4px 8px;
+    color: #5b7cff;
+}
+
+.project-card__download:hover {
+    background: #f0f4ff;
+    border-color: #5b7cff;
+}

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 import { useProject } from "../hooks/useProject";
+import { type Project } from "../models/Project";
 
 export default function ProjectsPage() {
     const {
@@ -10,11 +11,13 @@ export default function ProjectsPage() {
         updateProject,
         deleteProject,
         setActiveProject,
+        importProject,
     } = useProject();
 
     const [newProjectName, setNewProjectName] = useState("");
     const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     function handleCreateProject() {
         const trimmed = newProjectName.trim();
@@ -64,6 +67,43 @@ export default function ProjectsPage() {
         }
     }
 
+    function handleDownload(project: Project) {
+        const dataStr = JSON.stringify(project, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${project.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function handleImport(event: React.ChangeEvent<HTMLInputElement>) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result as string;
+                const parsed = JSON.parse(text);
+                if (!parsed || typeof parsed !== "object" || !parsed.name) {
+                    alert("Invalid project file: missing 'name' field.");
+                    return;
+                }
+                importProject(parsed as Project);
+            } catch {
+                alert("Invalid JSON file.");
+            }
+        };
+        reader.readAsText(file);
+
+        // Reset input so the same file can be re-imported
+        event.target.value = "";
+    }
+
     return (
         <div className="projects-page">
             <div className="projects-page__header">
@@ -73,7 +113,7 @@ export default function ProjectsPage() {
                 </span>
             </div>
 
-            {/* Create new project */}
+            {/* Create + Import row */}
             <div className="create-project-form">
                 <input
                     type="text"
@@ -91,6 +131,20 @@ export default function ProjectsPage() {
                 >
                     Create
                 </button>
+                <button
+                    type="button"
+                    className="create-project-form__button create-project-form__button--import"
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    Import
+                </button>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    className="create-project-form__file-input"
+                    onChange={handleImport}
+                />
             </div>
 
             {/* Project list */}
@@ -167,6 +221,14 @@ export default function ProjectsPage() {
                                     <div className="project-card__actions">
                                         <button
                                             type="button"
+                                            onClick={() => handleDownload(project)}
+                                            className="project-card__download"
+                                            title="Download as JSON"
+                                        >
+                                            Export
+                                        </button>
+                                        <button
+                                            type="button"
                                             onClick={() => startEdit(project.id, project.name)}
                                         >
                                             Edit
@@ -235,6 +297,20 @@ export default function ProjectsPage() {
                 .create-project-form__button:disabled {
                     opacity: 0.5;
                     cursor: not-allowed;
+                }
+
+                .create-project-form__button--import {
+                    background: #6c7891;
+                    border-color: #6c7891;
+                }
+
+                .create-project-form__button--import:hover {
+                    background: #5a6678;
+                    border-color: #5a6678;
+                }
+
+                .create-project-form__file-input {
+                    display: none;
                 }
 
                 .projects-empty {
@@ -330,6 +406,18 @@ export default function ProjectsPage() {
                     display: flex;
                     gap: 8px;
                     flex-shrink: 0;
+                }
+
+                .project-card__download {
+                    font-size: 1.1rem;
+                    line-height: 1;
+                    padding: 4px 8px;
+                    color: #5b7cff;
+                }
+
+                .project-card__download:hover {
+                    background: #f0f4ff;
+                    border-color: #5b7cff;
                 }
 
                 .project-card__delete {
