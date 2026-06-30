@@ -36,13 +36,44 @@ function sumComplexity(tickets: Array<{ complexity: number }>) {
     return tickets.reduce((sum, t) => sum + t.complexity, 0);
 }
 
-function boardsEqual(a: Board | null, b: Board | null): boolean {
-    if (!a || !b) return a === b;
-    return (
-        JSON.stringify(a.laneOrder.todo) === JSON.stringify(b.laneOrder.todo) &&
-        JSON.stringify(a.laneOrder.inProgress) === JSON.stringify(b.laneOrder.inProgress) &&
-        JSON.stringify(a.laneOrder.done) === JSON.stringify(b.laneOrder.done)
-    );
+/**
+ * Rebuild board from current sprint tickets, preserving drag order
+ * from the persisted project.board when available.
+ */
+function rebuildBoard(
+    sprintTicketIds: string[],
+    persistedBoard: Board | undefined
+): Board {
+    if (!persistedBoard) {
+        return {
+            laneOrder: {
+                todo: [...sprintTicketIds],
+                inProgress: [],
+                done: [],
+            },
+        };
+    }
+
+    const todo: string[] = [];
+    const inProgress: string[] = [];
+    const done: string[] = [];
+
+    for (const id of sprintTicketIds) {
+        if (persistedBoard.laneOrder.todo.includes(id)) {
+            todo.push(id);
+        } else if (persistedBoard.laneOrder.inProgress.includes(id)) {
+            inProgress.push(id);
+        } else if (persistedBoard.laneOrder.done.includes(id)) {
+            done.push(id);
+        } else {
+            // New ticket not in persisted board — defaults to To Do
+            todo.push(id);
+        }
+    }
+
+    return {
+        laneOrder: { todo, inProgress, done },
+    };
 }
 
 export default function KanbanPage() {
@@ -77,27 +108,25 @@ export default function KanbanPage() {
             )
             : [];
 
+    // Stable key that changes when sprint ticket membership changes
+    const sprintTicketKey = activeSprint?.id
+        ? `${activeSprint.id}:${activeSprint.ticketIds.join(",")}`
+        : "";
+
     // -------------------------
-    // Build board from tickets on sprint change
+    // Rebuild board whenever sprint tickets change
+    // Preserves drag order from persisted project.board
     // -------------------------
     useEffect(() => {
         if (!activeSprint) return;
 
         setBoard(() => {
-            return buildBoardFromTickets(
-                activeSprintTickets
+            return rebuildBoard(
+                activeSprint.ticketIds,
+                project?.board
             );
         });
-    }, [activeSprint?.id]);
-
-    // -------------------------
-    // Sync board from project only when content differs
-    // -------------------------
-    useEffect(() => {
-        if (project?.board && !boardsEqual(board, project.board)) {
-            setBoard(project.board);
-        }
-    }, [project?.board]);
+    }, [sprintTicketKey]);
 
     // -------------------------
     // Ticket lookup
