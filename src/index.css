@@ -1013,3 +1013,26 @@ button:focus-visible,
   padding: 22px;
   border-left: 6px solid #5b7cff;
 }
+
+/* Kanban drag-and-drop visual states */
+
+.kanban-lane__body:has(.ticket-row[aria-grabbed="true"]) {
+  background: #f0f4ff;
+  border-radius: 8px;
+}
+
+.ticket-row[aria-grabbed="true"] {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+
+.ticket-row.dragging {
+  opacity: 0.5;
+  box-shadow: 0 8px 24px rgba(31, 42, 68, 0.15);
+}
+
+.kanban-lane__body.drop-target {
+  background: #e8eeff;
+  border: 2px dashed #5b7cff;
+  border-radius: 12px;
+}

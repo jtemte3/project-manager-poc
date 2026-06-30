@@ -9,5 +9,7 @@ export const sampleProject: Project = {
 
   sprints: [],
 
-  tickets: []
+  tickets: [],
+  
+  board: null,
 };

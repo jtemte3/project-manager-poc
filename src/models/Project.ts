@@ -1,15 +1,18 @@
 import { type Epic } from "./Epic";
 import { type Sprint } from "./Sprint";
 import { type Ticket } from "./Ticket";
+import { type Board } from "./Board";
 
 export interface Project {
-  id: string;
+    id: string;
 
-  name: string;
+    name: string;
 
-  epics: Epic[];
+    epics: Epic[];
 
-  sprints: Sprint[];
+    sprints: Sprint[];
 
-  tickets: Ticket[];
+    tickets: Ticket[];
+
+    board: Board | null;
 }
