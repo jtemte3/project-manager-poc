@@ -1,280 +1,264 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+
+import {
+    DndContext,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragOverlay,
+    type DragEndEvent,
+} from "@dnd-kit/core";
 
 import TicketCard from "../components/TicketCard";
 import TicketEditor from "../components/TicketEditor";
+import KanbanLane from "../components/KanbanLane";
+
 import { useProject } from "../hooks/useProject";
+import { type Ticket } from "../models/Ticket";
+import { type Board } from "../models/Board";
+import { buildBoardFromTickets } from "../utils/buildBoardFromTickets";
+
+import { DND_DELAY_MS, DND_TOLERANCE_PX } from "../utils/dndConstants";
 
 function formatDate(date: string | null | undefined) {
     return date ?? "—";
 }
 
-function sumComplexity(
-    tickets: Array<{ complexity: number }>
-) {
-    return tickets.reduce(
-        (sum, ticket) => sum + ticket.complexity,
-        0
-    );
+function sumComplexity(tickets: Array<{ complexity: number }>) {
+    return tickets.reduce((sum, t) => sum + t.complexity, 0);
 }
 
 export default function KanbanPage() {
-    const { project } = useProject();
+    const { project, updateTicket } = useProject();
+
     const [selectedTicketId, setSelectedTicketId] =
         useState<string | null>(null);
 
+    const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
+
+    const [board, setBoard] = useState<Board | null>(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                delay: DND_DELAY_MS,
+                tolerance: DND_TOLERANCE_PX,
+            },
+        })
+    );
+
+    function isDefined<T>(value: T | undefined | null): value is T {
+        return value != null;
+    }
+
     const activeSprint =
         project?.sprints.find(
-            sprint =>
-                sprint.active && !sprint.archived
+            s => s.active && !s.archived
         ) ?? null;
 
     const activeSprintTickets =
         project && activeSprint
             ? project.tickets.filter(
-                ticket =>
-                    ticket.sprintId === activeSprint.id ||
-                    activeSprint.ticketIds.includes(
-                        ticket.id
-                    )
+                t =>
+                    t.sprintId === activeSprint.id ||
+                    activeSprint.ticketIds.includes(t.id)
             )
             : [];
 
-    const selectedTicket =
-        project?.tickets.find(
-            ticket =>
-                ticket.id === selectedTicketId
-        ) ?? null;
+    // -------------------------
+    // Build board from tickets
+    // -------------------------
+    useEffect(() => {
+        if (!activeSprint) return;
 
-    const todoTickets = activeSprintTickets.filter(
-        ticket =>
-            ticket.status === "Backlog" ||
-            ticket.status === "Todo"
-    );
-    const inProgressTickets = activeSprintTickets.filter(
-        ticket => ticket.status === "InProgress"
-    );
-    const doneTickets = activeSprintTickets.filter(
-        ticket => ticket.status === "Done"
-    );
+        setBoard(prev => {
+            return buildBoardFromTickets(
+                activeSprintTickets
+            );
+        });
+    }, [activeSprint?.id]);
 
+    // -------------------------
+    // Ticket lookup
+    // -------------------------
+    const ticketById = useMemo(() => {
+        const map = new Map<string, Ticket>();
+        for (const t of activeSprintTickets) {
+            map.set(t.id, t);
+        }
+        return map;
+    }, [activeSprintTickets]);
+
+    // -------------------------
+    // Derived lanes (ORDERED by board)
+    // -------------------------
+    const todoTickets =
+        board?.laneOrder.todo
+            .map(id => ticketById.get(id))
+            .filter(isDefined) ?? [];
+
+    const inProgressTickets =
+        board?.laneOrder.inProgress
+            .map(id => ticketById.get(id))
+            .filter(isDefined) ?? [];
+
+    const doneTickets =
+        board?.laneOrder.done
+            .map(id => ticketById.get(id))
+            .filter(isDefined) ?? [];
+
+    // -------------------------
+    // Selection reset
+    // -------------------------
     useEffect(() => {
         setSelectedTicketId(null);
     }, [activeSprint?.id]);
 
-    useEffect(() => {
-        if (
-            selectedTicketId &&
-            !activeSprintTickets.some(
-                ticket =>
-                    ticket.id === selectedTicketId
-            )
-        ) {
-            setSelectedTicketId(null);
-        }
-    }, [activeSprintTickets, selectedTicketId]);
+    // -------------------------
+    // Drag start
+    // -------------------------
+    const handleDragStart = useCallback(
+        (event: any) => {
+            const id = event.active.id;
 
-    useEffect(() => {
-        function handleKeyDown(event: KeyboardEvent) {
-            if (event.key === "Escape") {
-                setSelectedTicketId(null);
-            }
-        }
-
-        if (selectedTicket) {
-            window.addEventListener(
-                "keydown",
-                handleKeyDown
+            const ticket = project?.tickets.find(
+                t => t.id === id
             );
-        }
 
-        return () => {
-            window.removeEventListener(
-                "keydown",
-                handleKeyDown
-            );
-        };
-    }, [selectedTicket]);
+            setActiveTicket(ticket ?? null);
+        },
+        [project]
+    );
 
-    if (!project) {
-        return null;
-    }
+    // -------------------------
+    // Drag end (ONLY reorder within lane)
+    // -------------------------
+    const handleDragEnd = useCallback(
+        (event: DragEndEvent) => {
+            const { active, over } = event;
+
+            setActiveTicket(null);
+
+            if (!over || !board) return;
+
+            const activeId = active.id as string;
+            const overId = over.id as string;
+
+            const findLane = (id: string) => {
+                if (board.laneOrder.todo.includes(id)) return "todo";
+                if (board.laneOrder.inProgress.includes(id)) return "inProgress";
+                if (board.laneOrder.done.includes(id)) return "done";
+                return null;
+            };
+
+            const lane = findLane(activeId);
+            if (!lane) return;
+
+            const items = board.laneOrder[lane];
+
+            const oldIndex = items.indexOf(activeId);
+            const newIndex = items.indexOf(overId);
+
+            if (oldIndex === -1 || newIndex === -1) return;
+
+            const newItems = [...items];
+            const [moved] = newItems.splice(oldIndex, 1);
+            newItems.splice(newIndex, 0, moved);
+
+            setBoard({
+                ...board,
+                laneOrder: {
+                    ...board.laneOrder,
+                    [lane]: newItems,
+                },
+            });
+        },
+        [board]
+    );
+
+    const handleDragCancel = useCallback(() => {
+        setActiveTicket(null);
+    }, []);
+
+    if (!project || !board) return null;
 
     const ticketCount = activeSprintTickets.length;
-    const doneTicketCount = doneTickets.length;
-    const totalComplexity = sumComplexity(
-        activeSprintTickets
-    );
-    const doneComplexity = sumComplexity(doneTickets);
+
+    const completedTickets = doneTickets.length;
+
+    const totalComplexity =
+        sumComplexity(activeSprintTickets);
+
+    const doneComplexity =
+        sumComplexity(
+            doneTickets as unknown as any[]
+        );
 
     return (
-        <div className="kanban-page">
-            <header className="kanban-summary">
-                <div className="kanban-summary__title-group">
-                    <div className="backlog-eyebrow">
-                        Kanban Board
-                    </div>
-                    <h1 className="kanban-summary__title">
-                        {activeSprint?.title ??
-                            "No Sprint Active"}
+        <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+        >
+            <div className="kanban-page">
+                <header className="kanban-summary">
+                    <h1>
+                        {activeSprint?.title ?? "No Sprint Active"}
                     </h1>
-                </div>
 
-                <div className="kanban-metrics">
-                    <div className="kanban-metric">
-                        <span>Tickets</span>
-                        <strong>{ticketCount}</strong>
+                    <div className="kanban-metrics">
+                        <div>Tickets: {ticketCount}</div>
+                        <div>Done: {completedTickets}</div>
+                        <div>Complexity: {totalComplexity}</div>
+                        <div>
+                            Done Complexity: {doneComplexity}
+                        </div>
                     </div>
+                </header>
 
-                    <div className="kanban-metric">
-                        <span>Done</span>
-                        <strong>{doneTicketCount}</strong>
-                    </div>
-
-                    <div className="kanban-metric">
-                        <span>Complexity</span>
-                        <strong>{totalComplexity}</strong>
-                    </div>
-
-                    <div className="kanban-metric">
-                        <span>Done Complexity</span>
-                        <strong>{doneComplexity}</strong>
-                    </div>
-
-                    <div className="kanban-metric">
-                        <span>State</span>
-                        <strong>
-                            {activeSprint
-                                ? "Active"
-                                : "No Sprint Active"}
-                        </strong>
-                    </div>
-
-                    <div className="kanban-metric">
-                        <span>End Date</span>
-                        <strong>
-                            {activeSprint
-                                ? formatDate(
-                                    activeSprint.endDate
-                                )
-                                : "—"}
-                        </strong>
-                    </div>
-                </div>
-            </header>
-
-            {selectedTicket && (
-                <div
-                    className="ticket-modal"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Ticket details"
-                    onClick={() =>
-                        setSelectedTicketId(null)
-                    }
-                >
-                    <div
-                        className="ticket-modal__surface"
-                        onClick={event =>
-                            event.stopPropagation()
+                {selectedTicketId && (
+                    <TicketEditor
+                        ticket={
+                            project.tickets.find(
+                                t => t.id === selectedTicketId
+                            )!
                         }
-                    >
-                        <TicketEditor
-                            ticket={selectedTicket}
-                            onClose={() =>
-                                setSelectedTicketId(null)
-                            }
-                        />
-                    </div>
-                </div>
-            )}
+                        onClose={() =>
+                            setSelectedTicketId(null)
+                        }
+                    />
+                )}
 
-            <section className="kanban-board">
-                <div className="kanban-lane">
-                    <div className="kanban-lane__header">
-                        <span>To-Do</span>
-                        <strong>{todoTickets.length}</strong>
-                    </div>
+                <section className="kanban-board">
+                    <KanbanLane
+                        title="To Do"
+                        tickets={todoTickets}
+                        selectedTicketId={selectedTicketId}
+                        onSelectTicket={setSelectedTicketId}
+                    />
 
-                    <div className="kanban-lane__body">
-                        {todoTickets.map(ticket => (
-                            <TicketCard
-                                key={ticket.id}
-                                ticket={ticket}
-                                selected={
-                                    ticket.id ===
-                                    selectedTicketId
-                                }
-                                onSelect={() =>
-                                    setSelectedTicketId(
-                                        current =>
-                                            current === ticket.id
-                                                ? null
-                                                : ticket.id
-                                    )
-                                }
-                            />
-                        ))}
-                    </div>
-                </div>
+                    <KanbanLane
+                        title="In Progress"
+                        tickets={inProgressTickets}
+                        selectedTicketId={selectedTicketId}
+                        onSelectTicket={setSelectedTicketId}
+                    />
 
-                <div className="kanban-lane">
-                    <div className="kanban-lane__header">
-                        <span>In-Progress</span>
-                        <strong>
-                            {inProgressTickets.length}
-                        </strong>
-                    </div>
+                    <KanbanLane
+                        title="Done"
+                        tickets={doneTickets}
+                        selectedTicketId={selectedTicketId}
+                        onSelectTicket={setSelectedTicketId}
+                    />
+                </section>
+            </div>
 
-                    <div className="kanban-lane__body">
-                        {inProgressTickets.map(ticket => (
-                            <TicketCard
-                                key={ticket.id}
-                                ticket={ticket}
-                                selected={
-                                    ticket.id ===
-                                    selectedTicketId
-                                }
-                                onSelect={() =>
-                                    setSelectedTicketId(
-                                        current =>
-                                            current === ticket.id
-                                                ? null
-                                                : ticket.id
-                                    )
-                                }
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="kanban-lane">
-                    <div className="kanban-lane__header">
-                        <span>Done</span>
-                        <strong>{doneTickets.length}</strong>
-                    </div>
-
-                    <div className="kanban-lane__body">
-                        {doneTickets.map(ticket => (
-                            <TicketCard
-                                key={ticket.id}
-                                ticket={ticket}
-                                selected={
-                                    ticket.id ===
-                                    selectedTicketId
-                                }
-                                onSelect={() =>
-                                    setSelectedTicketId(
-                                        current =>
-                                            current === ticket.id
-                                                ? null
-                                                : ticket.id
-                                    )
-                                }
-                            />
-                        ))}
-                    </div>
-                </div>
-            </section>
-        </div>
+            <DragOverlay>
+                {activeTicket ? (
+                    <TicketCard ticket={activeTicket} />
+                ) : null}
+            </DragOverlay>
+        </DndContext>
     );
 }
