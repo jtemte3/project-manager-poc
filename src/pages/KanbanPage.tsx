@@ -43,6 +43,10 @@ function sumComplexity(tickets: Array<{ complexity: number }>) {
     return tickets.reduce((sum, t) => sum + t.complexity, 0);
 }
 
+function formatDate(date: string | null | undefined) {
+    return date ?? "—";
+}
+
 /**
  * Rebuild board from current sprint tickets.
  * Lane assignment comes from ticket status.
@@ -135,7 +139,7 @@ export default function KanbanPage() {
         setBoard(() => {
             return rebuildBoard(
                 activeSprintTickets,
-                project?.board
+                project?.board ?? undefined
             );
         });
     }, [sprintTicketKey]);
@@ -305,7 +309,7 @@ export default function KanbanPage() {
 
     const ticketCount = activeSprintTickets.length;
 
-    const completedTickets = doneTickets.length;
+    const doneTicketCount = doneTickets.length;
 
     const totalComplexity =
         sumComplexity(activeSprintTickets);
@@ -324,31 +328,87 @@ export default function KanbanPage() {
         >
             <div className="kanban-page">
                 <header className="kanban-summary">
-                    <h1>
-                        {activeSprint?.title ?? "No Sprint Active"}
-                    </h1>
-
-                    <div className="kanban-metrics">
-                        <div>Tickets: {ticketCount}</div>
-                        <div>Done: {completedTickets}</div>
-                        <div>Complexity: {totalComplexity}</div>
-                        <div>
-                            Done Complexity: {doneComplexity}
-                        </div>
+                <div className="kanban-summary__title-group">
+                    <div className="backlog-eyebrow">
+                        Kanban Board
                     </div>
-                </header>
+                    <h1 className="kanban-summary__title">
+                        {activeSprint?.title ??
+                            "No Sprint Active"}
+                    </h1>
+                </div>
+
+                <div className="kanban-metrics">
+                    <div className="kanban-metric">
+                        <span>Tickets</span>
+                        <strong>{ticketCount}</strong>
+                    </div>
+
+                    <div className="kanban-metric">
+                        <span>Done</span>
+                        <strong>{doneTicketCount}</strong>
+                    </div>
+
+                    <div className="kanban-metric">
+                        <span>Complexity</span>
+                        <strong>{totalComplexity}</strong>
+                    </div>
+
+                    <div className="kanban-metric">
+                        <span>Done Complexity</span>
+                        <strong>{doneComplexity}</strong>
+                    </div>
+
+                    <div className="kanban-metric">
+                        <span>State</span>
+                        <strong>
+                            {activeSprint
+                                ? "Active"
+                                : "No Sprint Active"}
+                        </strong>
+                    </div>
+
+                    <div className="kanban-metric">
+                        <span>End Date</span>
+                        <strong>
+                            {activeSprint
+                                ? formatDate(
+                                    activeSprint.endDate
+                                )
+                                : "—"}
+                        </strong>
+                    </div>
+                </div>
+            </header>
 
                 {selectedTicketId && (
-                    <TicketEditor
-                        ticket={
-                            project.tickets.find(
-                                t => t.id === selectedTicketId
-                            )!
-                        }
-                        onClose={() =>
+                    <div
+                        className="ticket-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Ticket details"
+                        onClick={() =>
                             setSelectedTicketId(null)
                         }
-                    />
+                    >
+                        <div
+                            className="ticket-modal__surface"
+                            onClick={event =>
+                                event.stopPropagation()
+                            }
+                        >
+                            <TicketEditor
+                                ticket={
+                                    project.tickets.find(
+                                        t => t.id === selectedTicketId
+                                    )!
+                                }
+                                onClose={() =>
+                                    setSelectedTicketId(null)
+                                }
+                            />
+                        </div>
+                    </div>
                 )}
 
                 <section className="kanban-board">
