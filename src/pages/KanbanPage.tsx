@@ -11,7 +11,7 @@ import {
 
 import TicketCard from "../components/TicketCard";
 import TicketEditor from "../components/TicketEditor";
-import KanbanLane from "../components/KanbanLane";
+import KanbanLane, { type LaneId } from "../components/KanbanLane";
 
 import { useProject } from "../hooks/useProject";
 import { type Ticket } from "../models/Ticket";
@@ -20,12 +20,29 @@ import { buildBoardFromTickets } from "../utils/buildBoardFromTickets";
 
 import { DND_DELAY_MS, DND_TOLERANCE_PX } from "../utils/dndConstants";
 
-function formatDate(date: string | null | undefined) {
-    return date ?? "—";
+const LANE_IDS = ["todo", "inProgress", "done"] as const;
+
+const LANE_TO_STATUS: Record<LaneId, Ticket["status"]> = {
+    todo: "Todo",
+    inProgress: "InProgress",
+    done: "Done",
+};
+
+function isDefined<T>(value: T | undefined | null): value is T {
+    return value != null;
 }
 
 function sumComplexity(tickets: Array<{ complexity: number }>) {
     return tickets.reduce((sum, t) => sum + t.complexity, 0);
+}
+
+function boardsEqual(a: Board | null, b: Board | null): boolean {
+    if (!a || !b) return a === b;
+    return (
+        JSON.stringify(a.laneOrder.todo) === JSON.stringify(b.laneOrder.todo) &&
+        JSON.stringify(a.laneOrder.inProgress) === JSON.stringify(b.laneOrder.inProgress) &&
+        JSON.stringify(a.laneOrder.done) === JSON.stringify(b.laneOrder.done)
+    );
 }
 
 export default function KanbanPage() {
@@ -47,10 +64,6 @@ export default function KanbanPage() {
         })
     );
 
-    function isDefined<T>(value: T | undefined | null): value is T {
-        return value != null;
-    }
-
     const activeSprint =
         project?.sprints.find(
             s => s.active && !s.archived
@@ -65,17 +78,26 @@ export default function KanbanPage() {
             : [];
 
     // -------------------------
-    // Build board from tickets
+    // Build board from tickets on sprint change
     // -------------------------
     useEffect(() => {
         if (!activeSprint) return;
 
-        setBoard(prev => {
+        setBoard(() => {
             return buildBoardFromTickets(
                 activeSprintTickets
             );
         });
     }, [activeSprint?.id]);
+
+    // -------------------------
+    // Sync board from project only when content differs
+    // -------------------------
+    useEffect(() => {
+        if (project?.board && !boardsEqual(board, project.board)) {
+            setBoard(project.board);
+        }
+    }, [project?.board]);
 
     // -------------------------
     // Ticket lookup
@@ -114,6 +136,24 @@ export default function KanbanPage() {
     }, [activeSprint?.id]);
 
     // -------------------------
+    // Helpers
+    // -------------------------
+    const findLane = useCallback(
+        (id: string): LaneId | null => {
+            if (!board) return null;
+            if (board.laneOrder.todo.includes(id)) return "todo";
+            if (board.laneOrder.inProgress.includes(id)) return "inProgress";
+            if (board.laneOrder.done.includes(id)) return "done";
+            return null;
+        },
+        [board]
+    );
+
+    const isLaneId = (id: string): id is LaneId => {
+        return LANE_IDS.includes(id as LaneId);
+    };
+
+    // -------------------------
     // Drag start
     // -------------------------
     const handleDragStart = useCallback(
@@ -130,7 +170,7 @@ export default function KanbanPage() {
     );
 
     // -------------------------
-    // Drag end (ONLY reorder within lane)
+    // Drag end (cross-lane + within-lane)
     // -------------------------
     const handleDragEnd = useCallback(
         (event: DragEndEvent) => {
@@ -143,36 +183,77 @@ export default function KanbanPage() {
             const activeId = active.id as string;
             const overId = over.id as string;
 
-            const findLane = (id: string) => {
-                if (board.laneOrder.todo.includes(id)) return "todo";
-                if (board.laneOrder.inProgress.includes(id)) return "inProgress";
-                if (board.laneOrder.done.includes(id)) return "done";
-                return null;
-            };
+            const sourceLane = findLane(activeId);
+            if (!sourceLane) return;
 
-            const lane = findLane(activeId);
-            if (!lane) return;
+            // Determine target lane and index
+            let targetLane: LaneId;
+            let targetIndex: number;
 
-            const items = board.laneOrder[lane];
+            if (isLaneId(overId)) {
+                // Dropped directly on a lane (empty or at bottom)
+                targetLane = overId;
+                targetIndex = board.laneOrder[targetLane].length;
+            } else {
+                // Dropped on a ticket — find its lane
+                targetLane = findLane(overId) ?? sourceLane;
+                targetIndex = board.laneOrder[targetLane].indexOf(overId);
+            }
 
-            const oldIndex = items.indexOf(activeId);
-            const newIndex = items.indexOf(overId);
+            // ---- Same-lane reorder: single array operation ----
+            if (sourceLane === targetLane) {
+                const items = [...board.laneOrder[sourceLane]];
+                const sourceIndex = items.indexOf(activeId);
+                if (sourceIndex === -1) return;
 
-            if (oldIndex === -1 || newIndex === -1) return;
+                items.splice(sourceIndex, 1);
 
-            const newItems = [...items];
-            const [moved] = newItems.splice(oldIndex, 1);
-            newItems.splice(newIndex, 0, moved);
+                if (targetIndex === -1) {
+                    targetIndex = items.length;
+                }
 
-            setBoard({
-                ...board,
+                items.splice(targetIndex, 0, activeId);
+
+                const newBoard: Board = {
+                    laneOrder: {
+                        ...board.laneOrder,
+                        [sourceLane]: items,
+                    },
+                };
+
+                setBoard(newBoard);
+                commitActiveProject({ board: newBoard });
+                return;
+            }
+
+            // ---- Cross-lane move: remove from source, insert into target ----
+            const sourceItems = [...board.laneOrder[sourceLane]];
+            const sourceIndex = sourceItems.indexOf(activeId);
+            if (sourceIndex === -1) return;
+            sourceItems.splice(sourceIndex, 1);
+
+            const targetItems = [...board.laneOrder[targetLane]];
+            if (targetIndex === -1) {
+                targetIndex = targetItems.length;
+            }
+            targetItems.splice(targetIndex, 0, activeId);
+
+            const newBoard: Board = {
                 laneOrder: {
                     ...board.laneOrder,
-                    [lane]: newItems,
+                    [sourceLane]: sourceItems,
+                    [targetLane]: targetItems,
                 },
-            });
+            };
+
+            setBoard(newBoard);
+            commitActiveProject({ board: newBoard });
+
+            // Update ticket status when crossing lanes
+            const newStatus = LANE_TO_STATUS[targetLane];
+            updateTicket(activeId, { status: newStatus });
         },
-        [board]
+        [board, findLane, commitActiveProject, updateTicket]
     );
 
     const handleDragCancel = useCallback(() => {
