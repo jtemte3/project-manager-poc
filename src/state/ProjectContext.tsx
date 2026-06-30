@@ -26,6 +26,8 @@ export interface ProjectContextType {
 
     setActiveProject: (projectId: string | null) => void;
 
+    importProject: (project: Project) => void;
+
     // Legacy single-project access (for backward compatibility)
     project: Project | null;
 
