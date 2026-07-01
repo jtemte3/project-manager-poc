@@ -1,0 +1,63 @@
+/* SprintBacklog Module Styles */
+
+.sprint-list-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #d9dfeb;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 32px rgba(31, 42, 68, 0.08);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sprint-epic-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 10px;
+}
+
+.sprint-epic-header:hover {
+  background: #f7f9fd;
+  border-color: #d8ddeb;
+}
+
+.sprint-epic-header--selected {
+  background: #eef3ff;
+  border-color: #5b7cff;
+}
+
+.sprint-epic-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  margin-top: 5px;
+  flex: 0 0 auto;
+}
+
+.sprint-epic-title {
+  font-weight: 700;
+  color: #1f2a44;
+}
+
+.sprint-epic-meta {
+  color: #6c7891;
+  font-size: 0.9rem;
+}
+
+.sprint-empty-state {
+  padding: 16px;
+  border: 1px dashed #c7d0e0;
+  border-radius: 14px;
+  background: #f9fbff;
+  color: #66738e;
+  line-height: 1.5;
+}
