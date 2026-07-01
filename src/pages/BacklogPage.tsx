@@ -5,6 +5,8 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    DragOverlay,
+    useDndContext,
     type DragEndEvent,
 } from "@dnd-kit/core";
 
@@ -20,7 +22,64 @@ import TicketEditor from "../components/TicketEditor";
 import EpicEditor from "../components/EpicEditor";
 import SortableTicketCard from "../components/SortableTicketCard";
 import { useProject } from "../hooks/useProject";
+import { type Ticket } from "../models/Ticket";
 import { DND_DELAY_MS, DND_TOLERANCE_PX } from "../utils/dndConstants";
+
+/**
+ * Hook to get the active draggable item from the DnD context.
+ * Used by the DragOverlay to know what to render.
+ */
+function useActiveTicket(ticketIds: string[]) {
+    const { active } = useDndContext();
+
+    if (!active) {
+        return null;
+    }
+
+    const isActiveInList = ticketIds.includes(active.id as string);
+
+    return isActiveInList ? active.id as string : null;
+}
+
+/**
+ * Wrapper component that provides the active ticket ID to the DragOverlay.
+ * This is needed because useDndContext must be used within a DndContext.
+ */
+function EpicTicketListWithOverlay({
+    epicTickets,
+    ticketIds,
+    editingTicketId,
+    setEditingTicketId,
+    setActiveTicketId,
+}: {
+    epicTickets: Ticket[];
+    ticketIds: string[];
+    editingTicketId: string | null;
+    setEditingTicketId: (id: string | null) => void;
+    setActiveTicketId: (id: string | null) => void;
+}) {
+    const activeTicketId = useActiveTicket(ticketIds);
+
+    useEffect(() => {
+        setActiveTicketId(activeTicketId);
+    }, [activeTicketId, setActiveTicketId]);
+
+    return (
+        <SortableContext
+            items={ticketIds}
+            strategy={verticalListSortingStrategy}
+        >
+            {epicTickets.map(ticket => (
+                <SortableTicketCard
+                    key={ticket.id}
+                    ticket={ticket}
+                    selected={ticket.id === editingTicketId}
+                    onSelect={() => setEditingTicketId(ticket.id)}
+                />
+            ))}
+        </SortableContext>
+    );
+}
 
 export default function BacklogPage() {
     const {
@@ -35,6 +94,7 @@ export default function BacklogPage() {
 
     const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
     const [editingEpicId, setEditingEpicId] = useState<string | null>(null);
+    const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
 
     // Dnd-kit sensors for drag activation constraints
     const sensors = useSensors(
@@ -67,6 +127,11 @@ export default function BacklogPage() {
         project?.epics.find(
             epic => epic.id === editingEpicId
         ) ?? null;
+
+    const activeTicket =
+        activeTicketId
+            ? project?.tickets.find(t => t.id === activeTicketId) ?? null
+            : null;
 
     useEffect(() => {
         function handleKeyDown(event: KeyboardEvent) {
@@ -236,28 +301,13 @@ export default function BacklogPage() {
 
                                         {expandedEpics.has(epic.id) && (
                                             <div className="backlog-ticket-list">
-                                                <SortableContext
-                                                    items={epic.ticketIds}
-                                                    strategy={verticalListSortingStrategy}
-                                                >
-                                                    {epicTickets.map(
-                                                        ticket => (
-                                                            <SortableTicketCard
-                                                                key={ticket.id}
-                                                                ticket={ticket}
-                                                                selected={
-                                                                    ticket.id ===
-                                                                    editingTicketId
-                                                                }
-                                                                onSelect={() =>
-                                                                    setEditingTicketId(
-                                                                        ticket.id
-                                                                    )
-                                                                }
-                                                            />
-                                                        )
-                                                    )}
-                                                </SortableContext>
+                                                <EpicTicketListWithOverlay
+                                                    epicTickets={epicTickets}
+                                                    ticketIds={epic.ticketIds}
+                                                    editingTicketId={editingTicketId}
+                                                    setEditingTicketId={setEditingTicketId}
+                                                    setActiveTicketId={setActiveTicketId}
+                                                />
 
                                                 <AddTicketCard
                                                     onClick={() =>
@@ -357,6 +407,13 @@ export default function BacklogPage() {
                     </div>
                 )}
             </div>
+
+            {/* DragOverlay shows the ticket while it's being dragged */}
+            <DragOverlay>
+                {activeTicket ? (
+                    <TicketCard ticket={activeTicket} />
+                ) : null}
+            </DragOverlay>
         </DndContext>
     );
 }
