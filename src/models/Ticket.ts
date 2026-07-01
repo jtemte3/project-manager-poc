@@ -1,4 +1,5 @@
 import { type ChecklistItem } from "./ChecklistItem";
+import { type Comment } from "./Comment";
 
 export interface Ticket {
 
@@ -21,4 +22,6 @@ export interface Ticket {
       | "Done";
 
   checklist: ChecklistItem[];
+
+  comments: Comment[];
 }

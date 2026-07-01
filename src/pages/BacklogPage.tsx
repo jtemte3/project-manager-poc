@@ -239,29 +239,6 @@ export default function BacklogPage() {
             ? project?.tickets.find(t => t.id === activeTicketId) ?? null
             : null;
 
-    useEffect(() => {
-        function handleKeyDown(event: KeyboardEvent) {
-            if (event.key === "Escape") {
-                setEditingTicketId(null);
-                setEditingEpicId(null);
-            }
-        }
-
-        if (selectedTicket || editingEpic) {
-            window.addEventListener(
-                "keydown",
-                handleKeyDown
-            );
-        }
-
-        return () => {
-            window.removeEventListener(
-                "keydown",
-                handleKeyDown
-            );
-        };
-    }, [selectedTicket, editingEpic, setEditingTicketId]);
-
     // -------------------------
     // Drag and Drop Handlers
     // -------------------------

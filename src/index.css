@@ -25,6 +25,7 @@
 @import './styles/components/TicketEditor.css';
 @import './styles/components/EpicEditor.css';
 @import './styles/components/ChecklistEditor.css';
+@import './styles/components/CommentsEditor.css';
 @import './styles/components/FormField.css';
 
 /* Modules */

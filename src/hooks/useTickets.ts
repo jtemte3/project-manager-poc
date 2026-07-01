@@ -23,6 +23,7 @@ export function useTickets({
       doneAt: null,
       status: "Backlog" as const,
       checklist: [],
+      comments: [],
     };
 
     const updatedEpics = epicId

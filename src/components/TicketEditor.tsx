@@ -1,6 +1,7 @@
 import { type Ticket } from "../models/Ticket";
 
 import ChecklistEditor from "./ChecklistEditor";
+import CommentsEditor from "./CommentsEditor";
 import { useProject } from "../hooks/useProject";
 import { getEpicColor } from "../utils/getEpicColor";
 import FormField from "./FormField";
@@ -198,6 +199,8 @@ export default function TicketEditor({
             </FormField>
 
             <ChecklistEditor ticket={ticket} />
+
+            <CommentsEditor ticket={ticket} />
 
             <div className="ticket-detail__danger-zone">
                 <button
