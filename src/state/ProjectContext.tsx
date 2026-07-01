@@ -103,6 +103,12 @@ export interface ProjectContextType {
         newPosition: number
     ) => void;
 
+    moveTicketToEpicAtPosition: (
+        ticketId: string,
+        targetEpicId: string,
+        position: number
+    ) => void;
+
     // Editing state
     editingTicketId: string | null;
 

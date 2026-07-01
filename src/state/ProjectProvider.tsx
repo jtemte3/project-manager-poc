@@ -647,6 +647,83 @@ export default function ProjectProvider({
         });
     }
 
+    /**
+     * Move a ticket from one epic (or from unassigned) to another epic at a specific position.
+     * This is an atomic operation that handles cross-epic drag-and-drop.
+     */
+    function moveTicketToEpicAtPosition(
+        ticketId: string,
+        targetEpicId: string,
+        position: number
+    ) {
+        if (!activeProject) return;
+
+        // Find the ticket to get its current epicId
+        const ticket = activeProject.tickets.find(
+            t => t.id === ticketId
+        );
+
+        if (!ticket) {
+            return;
+        }
+
+        const oldEpicId = ticket.epicId;
+
+        // If moving to the same epic, just reorder
+        if (oldEpicId === targetEpicId) {
+            reorderTicketInEpic(targetEpicId, ticketId, position);
+            return;
+        }
+
+        commitActiveProject({
+            // Update the ticket's epicId
+            tickets: activeProject.tickets.map(t =>
+                t.id === ticketId
+                    ? { ...t, epicId: targetEpicId }
+                    : t
+            ),
+            // Update all epics: remove from old, add to new at position
+            epics: activeProject.epics.map(epic => {
+                // Handle old epic - remove ticket from its list
+                if (epic.id === oldEpicId) {
+                    return {
+                        ...epic,
+                        ticketIds: (epic.ticketIds ?? []).filter(
+                            id => id !== ticketId
+                        ),
+                    };
+                }
+
+                // Handle target epic - insert ticket at position
+                if (epic.id === targetEpicId) {
+                    const ticketIds = [...(epic.ticketIds ?? [])];
+
+                    // Remove ticket if already present (shouldn't happen, but safety check)
+                    const existingIndex = ticketIds.indexOf(ticketId);
+                    if (existingIndex !== -1) {
+                        ticketIds.splice(existingIndex, 1);
+                    }
+
+                    // Clamp position to valid range
+                    const clampedPosition = Math.min(
+                        Math.max(0, position),
+                        ticketIds.length
+                    );
+
+                    // Insert at the target position
+                    ticketIds.splice(clampedPosition, 0, ticketId);
+
+                    return {
+                        ...epic,
+                        ticketIds,
+                    };
+                }
+
+                return epic;
+            }),
+        });
+    }
+
     return (
         <ProjectContext.Provider
             value={{
@@ -687,6 +764,7 @@ export default function ProjectProvider({
                 updateEpic,
                 deleteEpic,
                 reorderTicketInEpic,
+                moveTicketToEpicAtPosition,
 
                 // Editing state
                 editingTicketId,

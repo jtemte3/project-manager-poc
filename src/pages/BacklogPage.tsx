@@ -30,6 +30,7 @@ export default function BacklogPage() {
         editingTicketId,
         setEditingTicketId,
         reorderTicketInEpic,
+        moveTicketToEpicAtPosition,
     } = useProject();
 
     const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
@@ -110,30 +111,39 @@ export default function BacklogPage() {
                 t => t.id === activeId
             );
 
-            if (!activeTicket || !activeTicket.epicId) {
+            if (!activeTicket) {
                 return;
             }
 
-            // Find the epic that contains this ticket
-            const epic = project.epics.find(
-                e => e.id === activeTicket.epicId
+            // Find the epic that contains the drop target ticket
+            const overTicket = project.tickets.find(
+                t => t.id === overId
             );
 
-            if (!epic) {
+            if (!overTicket || !overTicket.epicId) {
                 return;
             }
 
-            // Check if the drop target is a ticket in the same epic
-            const isOverTicketInSameEpic = epic.ticketIds.includes(overId);
+            const targetEpicId = overTicket.epicId;
 
-            if (isOverTicketInSameEpic) {
-                // Get the new position based on the over ticket's position
-                const targetIndex = epic.ticketIds.indexOf(overId);
-                reorderTicketInEpic(epic.id, activeId, targetIndex);
+            // Find the target epic to get the position
+            const targetEpic = project.epics.find(
+                e => e.id === targetEpicId
+            );
+
+            if (!targetEpic) {
+                return;
             }
-            // If dropped outside a valid ticket in the same epic, no action needed
+
+            const targetIndex = targetEpic.ticketIds.indexOf(overId);
+
+            // Use the atomic moveTicketToEpicAtPosition function which handles:
+            // - Moving from one epic to another
+            // - Moving from unassigned to an epic
+            // - Reordering within the same epic
+            moveTicketToEpicAtPosition(activeId, targetEpicId, targetIndex);
         },
-        [project, reorderTicketInEpic]
+        [project, moveTicketToEpicAtPosition]
     );
 
     if (!project) {
