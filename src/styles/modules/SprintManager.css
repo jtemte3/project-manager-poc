@@ -1,0 +1,142 @@
+/* SprintManager Module Styles */
+
+.sprint-manager-panel {
+  min-height: 0;
+  padding: 20px;
+  gap: 16px;
+  overflow: auto;
+}
+
+.sprint-manager__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.sprint-manager__title {
+  margin: 4px 0 0;
+  font-size: 1.5rem;
+  line-height: 1.15;
+}
+
+.sprint-manager__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e4e8f2;
+}
+
+.sprint-manager__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  color: #33405a;
+}
+
+.sprint-manager__field span {
+  font-size: 0.9rem;
+}
+
+.sprint-manager__create-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.sprint-manager__field--grow {
+  flex: 1;
+}
+
+.sprint-manager__create-button {
+  white-space: nowrap;
+}
+
+.sprint-manager__selected {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+.sprint-manager__status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sprint-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #eef3f8;
+  color: #50607c;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sprint-status-badge--active {
+  background: #e4f2de;
+  color: #2f6b2f;
+}
+
+.sprint-manager__range {
+  color: #6c7891;
+  font-size: 0.92rem;
+}
+
+.sprint-manager__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sprint-ticket-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 10px;
+}
+
+.sprint-ticket-column__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 700;
+  color: #33405a;
+}
+
+.sprint-ticket-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.sprint-empty-state--panel {
+  margin-top: 12px;
+}
+
+.sprint-manager__instructions h3 {
+  margin: 8px 0 8px;
+  color: #1f2a44;
+}
+
+.sprint-manager__instructions p {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .sprint-manager__create-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
