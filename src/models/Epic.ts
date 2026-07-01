@@ -3,4 +3,5 @@ export interface Epic {
     name: string;
     description: string;
     color: string;
+    ticketIds: string[];
   }

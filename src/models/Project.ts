@@ -15,4 +15,6 @@ export interface Project {
     tickets: Ticket[];
 
     board: Board | null;
+
+    unassignedTicketIds: string[];
 }
