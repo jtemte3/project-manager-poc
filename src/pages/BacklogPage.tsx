@@ -7,6 +7,7 @@ import {
     useSensors,
     DragOverlay,
     useDndContext,
+    useDroppable,
     type DragEndEvent,
 } from "@dnd-kit/core";
 
@@ -42,21 +43,52 @@ function useActiveTicket(ticketIds: string[]) {
 }
 
 /**
+ * Drop target for the "Add Ticket" button area.
+ * Allows dropping tickets into an epic even when it's empty.
+ */
+function EpicDropTarget({
+    epicId,
+    onDrop,
+    children,
+}: {
+    epicId: string;
+    onDrop: (epicId: string) => void;
+    children: React.ReactNode;
+}) {
+    const { setNodeRef, isOver } = useDroppable({
+        id: `epic-drop-${epicId}`,
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`epic-drop-target${isOver ? " epic-drop-target--over" : ""}`}
+        >
+            {children}
+        </div>
+    );
+}
+
+/**
  * Wrapper component that provides the active ticket ID to the DragOverlay.
  * This is needed because useDndContext must be used within a DndContext.
  */
 function EpicTicketListWithOverlay({
+    epic,
     epicTickets,
     ticketIds,
     editingTicketId,
     setEditingTicketId,
     setActiveTicketId,
+    onDropToEpic,
 }: {
+    epic: { id: string; name: string };
     epicTickets: Ticket[];
     ticketIds: string[];
     editingTicketId: string | null;
     setEditingTicketId: (id: string | null) => void;
     setActiveTicketId: (id: string | null) => void;
+    onDropToEpic: (epicId: string) => void;
 }) {
     const activeTicketId = useActiveTicket(ticketIds);
 
@@ -65,19 +97,28 @@ function EpicTicketListWithOverlay({
     }, [activeTicketId, setActiveTicketId]);
 
     return (
-        <SortableContext
-            items={ticketIds}
-            strategy={verticalListSortingStrategy}
-        >
-            {epicTickets.map(ticket => (
-                <SortableTicketCard
-                    key={ticket.id}
-                    ticket={ticket}
-                    selected={ticket.id === editingTicketId}
-                    onSelect={() => setEditingTicketId(ticket.id)}
+        <>
+            <SortableContext
+                items={ticketIds}
+                strategy={verticalListSortingStrategy}
+            >
+                {epicTickets.map(ticket => (
+                    <SortableTicketCard
+                        key={ticket.id}
+                        ticket={ticket}
+                        selected={ticket.id === editingTicketId}
+                        onSelect={() => setEditingTicketId(ticket.id)}
+                    />
+                ))}
+            </SortableContext>
+
+            {/* Drop target for adding tickets (works even when epic is empty) */}
+            <EpicDropTarget epicId={epic.id} onDrop={onDropToEpic}>
+                <AddTicketCard
+                    onClick={() => onDropToEpic(epic.id)}
                 />
-            ))}
-        </SortableContext>
+            </EpicDropTarget>
+        </>
     );
 }
 
@@ -177,6 +218,21 @@ export default function BacklogPage() {
             );
 
             if (!activeTicket) {
+                return;
+            }
+
+            // Check if dropped on an epic drop target (for empty epics)
+            if (overId.startsWith("epic-drop-")) {
+                const targetEpicId = overId.replace("epic-drop-", "");
+                const targetEpic = project.epics.find(
+                    e => e.id === targetEpicId
+                );
+
+                if (targetEpic) {
+                    // Add to the end of the epic's ticket list
+                    const targetIndex = targetEpic.ticketIds.length;
+                    moveTicketToEpicAtPosition(activeId, targetEpicId, targetIndex);
+                }
                 return;
             }
 
@@ -302,19 +358,13 @@ export default function BacklogPage() {
                                         {expandedEpics.has(epic.id) && (
                                             <div className="backlog-ticket-list">
                                                 <EpicTicketListWithOverlay
+                                                    epic={epic}
                                                     epicTickets={epicTickets}
                                                     ticketIds={epic.ticketIds}
                                                     editingTicketId={editingTicketId}
                                                     setEditingTicketId={setEditingTicketId}
                                                     setActiveTicketId={setActiveTicketId}
-                                                />
-
-                                                <AddTicketCard
-                                                    onClick={() =>
-                                                        addTicket(
-                                                            epic.id
-                                                        )
-                                                    }
+                                                    onDropToEpic={(epicId) => addTicket(epicId)}
                                                 />
                                             </div>
                                         )}
