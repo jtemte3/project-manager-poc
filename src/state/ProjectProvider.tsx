@@ -147,6 +147,7 @@ export default function ProjectProvider({
             name: "New Epic",
             description: "",
             color: "#2196F3",
+            ticketIds: [],
         };
 
         commitActiveProject({
@@ -204,8 +205,21 @@ export default function ProjectProvider({
             checklist: [],
         };
 
+        // If adding to an epic, also add the ticket to the epic's ticketIds
+        const updatedEpics = epicId
+            ? activeProject.epics.map(epic =>
+                epic.id === epicId
+                    ? {
+                        ...epic,
+                        ticketIds: [...(epic.ticketIds ?? []), newTicket.id],
+                    }
+                    : epic
+            )
+            : activeProject.epics;
+
         commitActiveProject({
             tickets: [...activeProject.tickets, newTicket],
+            epics: updatedEpics,
         });
 
         setEditingTicketId(newTicket.id);
@@ -216,6 +230,43 @@ export default function ProjectProvider({
         updates: Record<string, any>
     ) {
         if (!activeProject) return;
+
+        // Find the current ticket to check for epic changes
+        const currentTicket = activeProject.tickets.find(
+            t => t.id === ticketId
+        );
+
+        if (!currentTicket) {
+            return;
+        }
+
+        const newEpicId = updates.epicId;
+        const oldEpicId = currentTicket.epicId;
+
+        // Update epics if the epic assignment changed
+        let updatedEpics = activeProject.epics;
+
+        if (newEpicId !== undefined && newEpicId !== oldEpicId) {
+            updatedEpics = activeProject.epics.map(epic => {
+                // Remove from old epic
+                if (epic.id === oldEpicId) {
+                    return {
+                        ...epic,
+                        ticketIds: (epic.ticketIds ?? []).filter(
+                            id => id !== ticketId
+                        ),
+                    };
+                }
+                // Add to new epic
+                if (epic.id === newEpicId) {
+                    return {
+                        ...epic,
+                        ticketIds: [...(epic.ticketIds ?? []), ticketId],
+                    };
+                }
+                return epic;
+            });
+        }
 
         commitActiveProject({
             tickets: activeProject.tickets.map(ticket => {
@@ -241,11 +292,31 @@ export default function ProjectProvider({
 
                 return nextTicket;
             }),
+            epics: updatedEpics,
         });
     }
 
     function deleteTicket(ticketId: string) {
         if (!activeProject) return;
+
+        // Find the ticket to get its epicId
+        const ticket = activeProject.tickets.find(
+            t => t.id === ticketId
+        );
+
+        // Remove from epic's ticketIds if assigned to an epic
+        const updatedEpics = ticket?.epicId
+            ? activeProject.epics.map(epic =>
+                epic.id === ticket.epicId
+                    ? {
+                        ...epic,
+                        ticketIds: (epic.ticketIds ?? []).filter(
+                            id => id !== ticketId
+                        ),
+                    }
+                    : epic
+            )
+            : activeProject.epics;
 
         commitActiveProject({
             tickets: activeProject.tickets.filter(
@@ -257,6 +328,7 @@ export default function ProjectProvider({
                     id => id !== ticketId
                 ),
             })),
+            epics: updatedEpics,
         });
     }
 
@@ -531,6 +603,50 @@ export default function ProjectProvider({
         });
     }
 
+    /**
+     * Reorder a ticket within an epic's ticketIds list.
+     * This is useful for drag-and-drop reordering in the backlog.
+     */
+    function reorderTicketInEpic(
+        epicId: string,
+        ticketId: string,
+        newPosition: number
+    ) {
+        if (!activeProject) return;
+
+        commitActiveProject({
+            epics: activeProject.epics.map(epic => {
+                if (epic.id !== epicId) {
+                    return epic;
+                }
+
+                // Make a copy of the ticketIds array
+                const ticketIds = [...(epic.ticketIds ?? [])];
+
+                // Remove the ticket from its current position
+                const currentIndex = ticketIds.indexOf(ticketId);
+                if (currentIndex === -1) {
+                    return epic; // Ticket not in this epic's list
+                }
+                ticketIds.splice(currentIndex, 1);
+
+                // Clamp position to valid range
+                const clampedPosition = Math.min(
+                    Math.max(0, newPosition),
+                    ticketIds.length
+                );
+
+                // Insert at the new position
+                ticketIds.splice(clampedPosition, 0, ticketId);
+
+                return {
+                    ...epic,
+                    ticketIds,
+                };
+            }),
+        });
+    }
+
     return (
         <ProjectContext.Provider
             value={{
@@ -570,6 +686,7 @@ export default function ProjectProvider({
                 addEpic,
                 updateEpic,
                 deleteEpic,
+                reorderTicketInEpic,
 
                 // Editing state
                 editingTicketId,

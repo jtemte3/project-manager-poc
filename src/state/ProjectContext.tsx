@@ -97,6 +97,12 @@ export interface ProjectContextType {
         epicId: string
     ) => void;
 
+    reorderTicketInEpic: (
+        epicId: string,
+        ticketId: string,
+        newPosition: number
+    ) => void;
+
     // Editing state
     editingTicketId: string | null;
 
