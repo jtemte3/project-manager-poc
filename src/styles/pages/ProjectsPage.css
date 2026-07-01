@@ -1,5 +1,7 @@
 /* ProjectsPage Styles */
 
+@import "../components/ProjectCard.css";
+
 .projects-page {
   max-width: 720px;
   margin: 0 auto;
@@ -77,105 +79,4 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.project-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
-  border: 1px solid #d9dfeb;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 4px 16px rgba(31, 42, 68, 0.06);
-}
-
-.project-card--active {
-  border-color: #5b7cff;
-  box-shadow: 0 4px 20px rgba(91, 124, 255, 0.15);
-}
-
-.project-card__main {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-  flex: 1;
-}
-
-.project-card__select {
-  flex-shrink: 0;
-  font-size: 0.8rem;
-  padding: 6px 10px;
-  min-width: 80px;
-  text-align: center;
-}
-
-.project-card--active .project-card__select {
-  color: #5b7cff;
-  font-weight: 600;
-}
-
-.project-card__info {
-  min-width: 0;
-}
-
-.project-card__name {
-  margin: 0 0 4px;
-  font-size: 1.15rem;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.project-card__meta {
-  color: #6c7891;
-  font-size: 0.85rem;
-}
-
-.project-card__edit {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-
-.project-card__edit-input {
-  font-size: 1.15rem;
-  font-weight: 500;
-}
-
-.project-card__edit-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.project-card__actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.project-card__download {
-  font-size: 1.1rem;
-  line-height: 1;
-  padding: 4px 8px;
-  color: #5b7cff;
-}
-
-.project-card__download:hover {
-  background: #f0f4ff;
-  border-color: #5b7cff;
-}
-
-.project-card__delete {
-  color: #d93025;
-}
-
-.project-card__delete:hover {
-  background: #fef2f2;
-  border-color: #d93025;
 }

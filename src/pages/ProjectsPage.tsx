@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 
+import ProjectCard from "../components/ProjectCard";
 import { useProject } from "../hooks/useProject";
 import { type Project } from "../models/Project";
 
@@ -154,97 +155,23 @@ export default function ProjectsPage() {
                 </div>
             ) : (
                 <div className="projects-list">
-                    {projects.map(project => {
-                        const isActive = project.id === activeProjectId;
-                        const isEditing = editingProjectId === project.id;
-
-                        return (
-                            <div
-                                key={project.id}
-                                className={`project-card${isActive ? " project-card--active" : ""}`}
-                            >
-                                <div className="project-card__main">
-                                    <button
-                                        type="button"
-                                        className="project-card__select"
-                                        onClick={() => setActiveProject(project.id)}
-                                        title={isActive ? "Active project" : "Select this project"}
-                                    >
-                                        {isActive ? "● Active" : "○ Select"}
-                                    </button>
-
-                                    {isEditing ? (
-                                        <div className="project-card__edit">
-                                            <input
-                                                type="text"
-                                                className="project-card__edit-input"
-                                                value={editingName}
-                                                onChange={e => setEditingName(e.target.value)}
-                                                onKeyDown={handleKeyDownEdit}
-                                                autoFocus
-                                            />
-                                            <div className="project-card__edit-actions">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleSaveEdit(project.id)}
-                                                >
-                                                    Save
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleCancelEdit}
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="project-card__info">
-                                            <h2 className="project-card__name">
-                                                {project.name}
-                                            </h2>
-                                            <span className="project-card__meta">
-                                                {project.tickets.length} ticket
-                                                {project.tickets.length !== 1 ? "s" : ""}
-                                                {" · "}
-                                                {project.sprints.length} sprint
-                                                {project.sprints.length !== 1 ? "s" : ""}
-                                                {" · "}
-                                                {project.epics.length} epic
-                                                {project.epics.length !== 1 ? "s" : ""}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {!isEditing && (
-                                    <div className="project-card__actions">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDownload(project)}
-                                            className="project-card__download"
-                                            title="Download as JSON"
-                                        >
-                                            Export
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => startEdit(project.id, project.name)}
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="project-card__delete"
-                                            onClick={() => handleDelete(project.id)}
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                    {projects.map(project => (
+                        <ProjectCard
+                            key={project.id}
+                            project={project}
+                            isActive={project.id === activeProjectId}
+                            isEditing={editingProjectId === project.id}
+                            editingName={editingName}
+                            onSelect={() => setActiveProject(project.id)}
+                            onChangeEditingName={setEditingName}
+                            onKeyDownEdit={handleKeyDownEdit}
+                            onSaveEdit={() => handleSaveEdit(project.id)}
+                            onCancelEdit={handleCancelEdit}
+                            onDownload={() => handleDownload(project)}
+                            onStartEdit={() => startEdit(project.id, project.name)}
+                            onDelete={() => handleDelete(project.id)}
+                        />
+                    ))}
                 </div>
             )}
         </div>
