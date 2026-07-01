@@ -1,0 +1,68 @@
+/* NavBar Component Styles */
+
+.icon-button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid #5b7cff;
+  outline-offset: 2px;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #24324f;
+  color: white;
+  padding: 0 20px;
+  height: 60px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
+.navbar-brand a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.navbar-links {
+  display: flex;
+  list-style: none;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.navbar-links li a {
+  color: #d7deec;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.navbar-links li a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.navbar-links li a.active {
+  background: #5b7cff;
+  color: white;
+  font-weight: 600;
+}

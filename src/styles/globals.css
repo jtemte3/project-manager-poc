@@ -1,0 +1,65 @@
+/* Global Styles & Resets */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background:
+    linear-gradient(180deg, #edf2fb 0%, #f5f7fb 40%, #eef2f7 100%);
+  color: #1f2a44;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  border: 1px solid #cfd6e4;
+  background: #ffffff;
+  color: #1f2a44;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #f7f9fd;
+  box-shadow: 0 6px 18px rgba(31, 42, 68, 0.06);
+}
+
+input,
+textarea,
+select {
+  border: 1px solid #cfd6e4;
+  border-radius: 10px;
+  background: #fff;
+  color: #1f2a44;
+  padding: 10px 12px;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+button:focus-visible {
+  outline: 2px solid #5b7cff;
+  outline-offset: 2px;
+}
+
+.main-content {
+  padding: 20px;
+  min-height: calc(100vh - 60px);
+}

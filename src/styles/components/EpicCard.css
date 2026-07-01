@@ -1,0 +1,50 @@
+/* EpicCard Component Styles */
+
+.epic-card__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: #6c7891;
+  font-weight: 700;
+}
+
+.epic-card {
+  border: 1px solid #d8ddeb;
+  border-left-width: 6px;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 10px 16px;
+  box-shadow: 0 1px 0 rgba(31, 42, 68, 0.02);
+  margin-bottom: 4px;
+}
+
+.epic-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.epic-card__title {
+  margin: 4px 0 4px;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.epic-card__meta {
+  color: #6c7891;
+  font-size: 0.9rem;
+}
+
+.epic-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.epic-card__body {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e4e8f2;
+}
