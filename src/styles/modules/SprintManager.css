@@ -117,6 +117,24 @@
   flex-direction: column;
   gap: 10px;
   min-height: 0;
+  min-height: 100px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  border: 2px dashed transparent;
+}
+
+/* Visual feedback when dragging over the sprint ticket list */
+.sprint-ticket-scroll--over {
+  background-color: #eef3ff;
+  border-color: #5b7cff;
+}
+
+.sprint-empty-state__hint {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #6c7891;
+  font-style: italic;
 }
 
 .sprint-empty-state--panel {

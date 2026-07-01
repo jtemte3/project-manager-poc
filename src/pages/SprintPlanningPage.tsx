@@ -1,9 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+import {
+    DndContext,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragOverlay,
+    type DragEndEvent,
+} from "@dnd-kit/core";
 
 import SprintBacklog from "../modules/SprintBacklog";
 import SprintManager from "../modules/SprintManager";
 import { useProject } from "../hooks/useProject";
 import { getEpicColor } from "../utils/getEpicColor";
+import { type Ticket } from "../models/Ticket";
+import TicketCard from "../components/TicketCard";
+import { DND_DELAY_MS, DND_TOLERANCE_PX } from "../utils/dndConstants";
 
 function formatDateRange(
     startDate: string | null,
@@ -16,6 +28,12 @@ function formatDateRange(
     return `${startDate} to ${endDate}`;
 }
 
+/**
+ * Special drop ID indicating the ticket was dropped outside of any valid target
+ * (e.g., dropped back into the backlog area).
+ */
+const BACKLOG_DROP_ID = "backlog-drop-zone";
+
 export default function SprintPlanningPage() {
     const {
         project,
@@ -25,6 +43,7 @@ export default function SprintPlanningPage() {
         endSprint,
         deleteSprint,
         assignTicketToSprint,
+        assignTicketToSprintAtPosition,
         removeTicketFromSprint,
     } = useProject();
 
@@ -37,6 +56,19 @@ export default function SprintPlanningPage() {
     const [selectedEpicId, setSelectedEpicId] =
         useState<string | null>(null);
     const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
+
+    // Active ticket being dragged (for DragOverlay)
+    const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
+
+    // Dnd-kit sensors for drag activation constraints
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                delay: DND_DELAY_MS,
+                tolerance: DND_TOLERANCE_PX,
+            },
+        })
+    );
 
     useEffect(() => {
         if (!project) {
@@ -93,7 +125,7 @@ export default function SprintPlanningPage() {
             ? project.sprints.find(
                 sprint =>
                     sprint.id === selectedSprintId
-            ) ?? null
+                ) ?? null
             : null;
 
     const visibleBacklogTickets =
@@ -217,39 +249,142 @@ export default function SprintPlanningPage() {
         setSelectedBacklogTicketId(null);
     }
 
-    return (
-        <div className="backlog-page sprint-page">
-            <SprintBacklog
-                projectName={project.name}
-                backlogGroups={backlogGroups}
-                unassignedTickets={unassignedTickets}
-                selectedBacklogTicketId={selectedBacklogTicketId}
-                selectedEpicId={selectedEpicId}
-                expandedEpics={expandedEpics}
-                onToggleEpic={(epicId) => {
-                    setSelectedEpicId(epicId);
-                    toggleEpic(epicId);
-                }}
-                onSelectBacklogTicket={handleSelectBacklogTicket}
-            />
+    // -------------------------
+    // Drag and Drop Handlers
+    // -------------------------
 
-            <SprintManager
-                project={project}
-                selectedSprint={selectedSprint}
-                selectedSprintId={selectedSprintId}
-                selectedSprintTicketId={selectedSprintTicketId}
-                selectedBacklogTicketId={selectedBacklogTicketId}
-                selectedSprintTickets={selectedSprintTickets}
-                formatDateRange={formatDateRange}
-                onCreateSprint={handleCreateSprint}
-                onSelectSprint={setSelectedSprintId}
-                onToggleSprint={handleSprintToggle}
-                onDeleteSprint={handleDeleteSprint}
-                onAddSelectedTicket={handleAddSelectedTicket}
-                onRemoveSelectedTicket={handleRemoveSelectedTicket}
-                onSelectSprintTicket={handleSelectSprintTicket}
-                onUpdateSprint={updateSprint}
-            />
-        </div>
+    const handleDragStart = useCallback(
+        (event: any) => {
+            const id = event.active.id;
+
+            const ticket = project?.tickets.find(
+                t => t.id === id
+            );
+
+            setActiveTicket(ticket ?? null);
+        },
+        [project]
+    );
+
+    const handleDragEnd = useCallback(
+        (event: DragEndEvent) => {
+            const { active, over } = event;
+
+            setActiveTicket(null);
+
+            if (!over || !selectedSprint || selectedSprint.archived) {
+                return;
+            }
+
+            const activeId = active.id as string;
+            const overId = over.id as string;
+
+            // Check if the active ticket is from the backlog or from the sprint
+            const isFromSprint = selectedSprint.ticketIds.includes(activeId);
+
+            // Case 1: Ticket dropped onto the backlog drop zone (remove from sprint)
+            if (overId === BACKLOG_DROP_ID) {
+                if (isFromSprint) {
+                    removeTicketFromSprint(activeId);
+                    setSelectedSprintTicketId(null);
+                }
+                return;
+            }
+
+            // Check if the drop target is within the sprint's ticket list
+            const isOverSprintTicket = selectedSprint.ticketIds.includes(overId);
+
+            // Case 2: Backlog ticket dropped into sprint onto another ticket (add at position)
+            if (!isFromSprint && isOverSprintTicket) {
+                const targetIndex = selectedSprint.ticketIds.indexOf(overId);
+                assignTicketToSprintAtPosition(activeId, selectedSprint.id, targetIndex);
+                return;
+            }
+
+            // Case 3: Backlog ticket dropped into empty sprint area (append to end)
+            if (!isFromSprint && !isOverSprintTicket) {
+                // The over target might be the sprint drop zone itself
+                if (overId === "sprint-ticket-list") {
+                    assignTicketToSprintAtPosition(
+                        activeId,
+                        selectedSprint.id,
+                        selectedSprint.ticketIds.length
+                    );
+                }
+                return;
+            }
+
+            // Case 4: Sprint ticket reordered within sprint
+            if (isFromSprint && isOverSprintTicket) {
+                const sourceIndex = selectedSprint.ticketIds.indexOf(activeId);
+                const targetIndex = selectedSprint.ticketIds.indexOf(overId);
+
+                if (sourceIndex === -1 || targetIndex === -1) {
+                    return;
+                }
+
+                // Use assignTicketToSprintAtPosition to handle the reordering
+                // This will remove from old position and insert at new position
+                assignTicketToSprintAtPosition(activeId, selectedSprint.id, targetIndex);
+
+                return;
+            }
+
+            // Case 5: Ticket dropped outside valid targets (no action needed)
+        },
+        [selectedSprint, assignTicketToSprintAtPosition, removeTicketFromSprint]
+    );
+
+    const handleDragCancel = useCallback(() => {
+        setActiveTicket(null);
+    }, []);
+
+    return (
+        <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+        >
+            <div className="backlog-page sprint-page">
+                <SprintBacklog
+                    projectName={project.name}
+                    backlogGroups={backlogGroups}
+                    unassignedTickets={unassignedTickets}
+                    selectedBacklogTicketId={selectedBacklogTicketId}
+                    selectedEpicId={selectedEpicId}
+                    expandedEpics={expandedEpics}
+                    onToggleEpic={(epicId) => {
+                        setSelectedEpicId(epicId);
+                        toggleEpic(epicId);
+                    }}
+                    onSelectBacklogTicket={handleSelectBacklogTicket}
+                />
+
+                <SprintManager
+                    project={project}
+                    selectedSprint={selectedSprint}
+                    selectedSprintId={selectedSprintId}
+                    selectedSprintTicketId={selectedSprintTicketId}
+                    selectedBacklogTicketId={selectedBacklogTicketId}
+                    selectedSprintTickets={selectedSprintTickets}
+                    formatDateRange={formatDateRange}
+                    onCreateSprint={handleCreateSprint}
+                    onSelectSprint={setSelectedSprintId}
+                    onToggleSprint={handleSprintToggle}
+                    onDeleteSprint={handleDeleteSprint}
+                    onAddSelectedTicket={handleAddSelectedTicket}
+                    onRemoveSelectedTicket={handleRemoveSelectedTicket}
+                    onSelectSprintTicket={handleSelectSprintTicket}
+                    onUpdateSprint={updateSprint}
+                />
+            </div>
+
+            <DragOverlay>
+                {activeTicket ? (
+                    <TicketCard ticket={activeTicket} />
+                ) : null}
+            </DragOverlay>
+        </DndContext>
     );
 }

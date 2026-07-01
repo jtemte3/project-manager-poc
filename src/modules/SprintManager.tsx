@@ -1,6 +1,13 @@
+import { useDroppable } from "@dnd-kit/core";
+
+import {
+    SortableContext,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
 import { type Sprint } from "../models/Sprint";
 import { type Ticket } from "../models/Ticket";
-import TicketCard from "../components/TicketCard";
+import SortableTicketCard from "../components/SortableTicketCard";
 import FormField from "../components/FormField";
 
 interface SprintManagerProps {
@@ -44,6 +51,11 @@ export default function SprintManager({
     onSelectSprintTicket,
     onUpdateSprint,
 }: SprintManagerProps) {
+    // Droppable zone for the sprint ticket list
+    const { setNodeRef: setSprintDropRef, isOver: isSprintOver } = useDroppable({
+        id: "sprint-ticket-list",
+    });
+
     return (
         <aside className="sprint-manager-panel">
             <div className="sprint-manager__header">
@@ -235,28 +247,39 @@ export default function SprintManager({
                             </span>
                         </div>
 
-                        <div className="sprint-ticket-scroll">
-                            {selectedSprintTickets.map(
-                                ticket => (
-                                    <TicketCard
-                                        key={ticket.id}
-                                        ticket={ticket}
-                                        selected={
-                                            ticket.id ===
-                                            selectedSprintTicketId
-                                        }
-                                        onSelect={() => {
-                                            onSelectSprintTicket(
-                                                ticket.id
-                                            );
-                                        }}
-                                    />
-                                )
-                            )}
+                        <div
+                            ref={setSprintDropRef}
+                            className={`sprint-ticket-scroll${isSprintOver ? " sprint-ticket-scroll--over" : ""}`}
+                        >
+                            <SortableContext
+                                items={selectedSprintTickets.map(t => t.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {selectedSprintTickets.map(
+                                    ticket => (
+                                        <SortableTicketCard
+                                            key={ticket.id}
+                                            ticket={ticket}
+                                            selected={
+                                                ticket.id ===
+                                                selectedSprintTicketId
+                                            }
+                                            onSelect={() => {
+                                                onSelectSprintTicket(
+                                                    ticket.id
+                                                );
+                                            }}
+                                        />
+                                    )
+                                )}
+                            </SortableContext>
 
                             {!selectedSprintTickets.length && (
                                 <div className="sprint-empty-state">
                                     No tickets in this sprint yet.
+                                    <div className="sprint-empty-state__hint">
+                                        Drag tickets here from the backlog.
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -272,7 +295,7 @@ export default function SprintManager({
                         Use the sprint dropdown to open an existing sprint, or create a new one to start planning work.
                     </p>
                     <p>
-                        Once a sprint is selected, tickets from the backlog on the left can be added into the sprint column on the right.
+                        Once a sprint is selected, tickets from the backlog on the left can be added into the sprint column on the right by dragging them.
                     </p>
                 </div>
             )}

@@ -431,6 +431,75 @@ export default function ProjectProvider({
         });
     }
 
+    /**
+     * Assign a ticket to a sprint at a specific position in the ticketIds array.
+     * This is useful for drag-and-drop reordering.
+     */
+    function assignTicketToSprintAtPosition(
+        ticketId: string,
+        sprintId: string,
+        position: number
+    ) {
+        if (!activeProject) return;
+
+        const ticket = activeProject.tickets.find(
+            item => item.id === ticketId
+        );
+
+        if (!ticket) {
+            return;
+        }
+
+        commitActiveProject({
+            tickets: activeProject.tickets.map(item =>
+                item.id === ticketId
+                    ? {
+                        ...item,
+                        sprintId,
+                        status:
+                            item.status === "Backlog"
+                                ? "Todo"
+                                : item.status,
+                    }
+                    : item
+            ),
+            sprints: activeProject.sprints.map(sprint => {
+                if (sprint.id !== sprintId) {
+                    // Remove ticket from other sprints
+                    return {
+                        ...sprint,
+                        ticketIds: sprint.ticketIds.filter(
+                            id => id !== ticketId
+                        ),
+                    };
+                }
+
+                // Target sprint - insert at position
+                const ticketIds = [...sprint.ticketIds];
+
+                // Remove ticket if already present (moving within sprint)
+                const existingIndex = ticketIds.indexOf(ticketId);
+                if (existingIndex !== -1) {
+                    ticketIds.splice(existingIndex, 1);
+                }
+
+                // Clamp position to valid range
+                const clampedPosition = Math.min(
+                    Math.max(0, position),
+                    ticketIds.length
+                );
+
+                // Insert at the target position
+                ticketIds.splice(clampedPosition, 0, ticketId);
+
+                return {
+                    ...sprint,
+                    ticketIds,
+                };
+            }),
+        });
+    }
+
     function removeTicketFromSprint(ticketId: string) {
         if (!activeProject) return;
 
@@ -494,6 +563,7 @@ export default function ProjectProvider({
                 endSprint,
                 deleteSprint,
                 assignTicketToSprint,
+                assignTicketToSprintAtPosition,
                 removeTicketFromSprint,
 
                 // Epic operations
