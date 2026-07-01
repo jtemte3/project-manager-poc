@@ -26,3 +26,7 @@
 @import './styles/components/EpicEditor.css';
 @import './styles/components/ChecklistEditor.css';
 @import './styles/components/FormField.css';
+
+/* Modules */
+@import './styles/modules/SprintBacklog.css';
+@import './styles/modules/SprintManager.css';

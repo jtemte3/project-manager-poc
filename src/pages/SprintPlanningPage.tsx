@@ -4,10 +4,6 @@ import SprintBacklog from "../modules/SprintBacklog";
 import SprintManager from "../modules/SprintManager";
 import { useProject } from "../hooks/useProject";
 import { getEpicColor } from "../utils/getEpicColor";
-import { type Sprint } from "../models/Sprint";
-
-import "../styles/modules/SprintBacklog.css";
-import "../styles/modules/SprintManager.css";
 
 function formatDateRange(
     startDate: string | null,
