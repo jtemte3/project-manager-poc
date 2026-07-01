@@ -102,8 +102,6 @@ export default function SprintPlanningPage() {
             ? project.tickets.filter(
                 ticket =>
                     ticket.status !== "Done" &&
-                    ticket.sprintId !==
-                        selectedSprint.id &&
                     !selectedSprint.ticketIds.includes(
                         ticket.id
                     )
@@ -116,8 +114,6 @@ export default function SprintPlanningPage() {
         selectedSprint
             ? project.tickets.filter(
                 ticket =>
-                    ticket.sprintId ===
-                        selectedSprint.id ||
                     selectedSprint.ticketIds.includes(
                         ticket.id
                     )

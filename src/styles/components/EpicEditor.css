@@ -1,0 +1,33 @@
+/* EpicEditor Component Styles */
+
+.epic-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 72px 24px 24px;
+  background: rgba(15, 22, 40, 0.62);
+  backdrop-filter: blur(4px);
+}
+
+.epic-modal__surface {
+  width: min(1120px, 100%);
+  height: min(86vh, 920px);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.28);
+  background: #ffffff;
+}
+
+.epic-modal__surface .epic-detail {
+  height: 100%;
+}
+
+.epic-detail {
+  height: 100%;
+  overflow: auto;
+  padding: 22px;
+  border-left: 6px solid #5b7cff;
+}

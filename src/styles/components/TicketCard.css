@@ -1,0 +1,102 @@
+/* TicketCard & SortableTicketCard Component Styles */
+
+.ticket-row {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 16px;
+  border: 1px solid #d8ddeb;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.ticket-row:focus-visible {
+  outline: 2px solid #5b7cff;
+  outline-offset: 2px;
+}
+
+.ticket-row:hover {
+  transform: translateY(-1px);
+  border-color: #bfc9dc;
+  background: #ffffff;
+  box-shadow: 0 10px 20px rgba(31, 42, 68, 0.08);
+}
+
+.ticket-row--selected {
+  border-color: #5b7cff;
+  background: #eef3ff;
+  box-shadow: 0 12px 24px rgba(91, 124, 255, 0.15);
+}
+
+.ticket-row__left {
+  min-width: 0;
+  flex: 1;
+}
+
+.ticket-row__title {
+  font-weight: 700;
+  color: #1f2a44;
+  line-height: 1.25;
+}
+
+.ticket-row__description {
+  margin-top: 6px;
+  color: #5b6479;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ticket-row__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: #5b6479;
+  font-size: 0.86rem;
+}
+
+.ticket-row__chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ticket-row__chip--muted {
+  background: #eff3f8;
+  color: #50607c;
+}
+
+.ticket-row__status {
+  font-weight: 700;
+  color: #50607c;
+  white-space: nowrap;
+}
+
+/* Kanban drag-and-drop visual states */
+.ticket-row[aria-grabbed="true"] {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+
+.ticket-row.dragging {
+  opacity: 0.5;
+  box-shadow: 0 8px 24px rgba(31, 42, 68, 0.15);
+}

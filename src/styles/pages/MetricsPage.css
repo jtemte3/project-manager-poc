@@ -1,0 +1,131 @@
+/* MetricsPage Styles */
+
+.metrics-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: calc(100vh - 100px);
+}
+
+.metrics-summary__controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.metrics-sprint-select {
+  min-width: 280px;
+}
+
+.metrics-graph-shell,
+.metrics-list-shell {
+  border: 1px solid #d9dfeb;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 32px rgba(31, 42, 68, 0.08);
+  overflow: hidden;
+}
+
+.metrics-graph-shell {
+  padding: 20px;
+}
+
+.metrics-graph-shell__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.metrics-graph-shell__title,
+.metrics-list-shell__title {
+  margin: 4px 0 0;
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.metrics-mode-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #d9dfeb;
+  border-radius: 12px;
+  background: #f8fafd;
+}
+
+.metrics-mode-toggle button {
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #50607c;
+  box-shadow: none;
+}
+
+.metrics-mode-toggle button.is-active {
+  background: #5b7cff;
+  color: #ffffff;
+}
+
+.metrics-chart {
+  width: 100%;
+  height: 360px;
+}
+
+.metrics-list-shell {
+  padding: 20px;
+}
+
+.metrics-list-shell__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.metrics-list-shell__count {
+  min-width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid #d8ddeb;
+  background: #ffffff;
+  font-weight: 700;
+  color: #1f2a44;
+}
+
+.metrics-ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.metrics-empty-state {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px dashed #c7d0e0;
+  border-radius: 14px;
+  background: #f9fbff;
+  color: #66738e;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .metrics-graph-shell__header,
+  .metrics-list-shell__header {
+    flex-direction: column;
+  }
+
+  .metrics-sprint-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .metrics-chart {
+    height: 300px;
+  }
+}
