@@ -1,4 +1,11 @@
-import TicketCard from "../components/TicketCard";
+import { useDroppable } from "@dnd-kit/core";
+
+import {
+    SortableContext,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
+import SortableTicketCard from "../components/SortableTicketCard";
 import { type Epic } from "../models/Epic";
 import { type Ticket } from "../models/Ticket";
 
@@ -29,6 +36,11 @@ export default function SprintBacklog({
     onToggleEpic,
     onSelectBacklogTicket,
 }: SprintBacklogProps) {
+    // Droppable zone for tickets being dragged out of the sprint
+    const { setNodeRef: setBacklogDropRef } = useDroppable({
+        id: "backlog-drop-zone",
+    });
+
     return (
         <section className="sprint-list-panel">
             <div className="backlog-header">
@@ -45,7 +57,10 @@ export default function SprintBacklog({
                 </div>
             </div>
 
-            <div className="backlog-scroll">
+            <div
+                ref={setBacklogDropRef}
+                className="backlog-scroll"
+            >
                 <div className="backlog-section-label">
                     Backlog
                 </div>
@@ -81,23 +96,28 @@ export default function SprintBacklog({
 
                             {expandedEpics.has(epic.id) && (
                                 <div className="backlog-ticket-list">
-                                    {tickets.map(
-                                        ticket => (
-                                            <TicketCard
-                                                key={ticket.id}
-                                                ticket={ticket}
-                                                selected={
-                                                    ticket.id ===
-                                                    selectedBacklogTicketId
-                                                }
-                                                onSelect={() => {
-                                                    onSelectBacklogTicket(
-                                                        ticket.id
-                                                    );
-                                                }}
-                                            />
-                                        )
-                                    )}
+                                    <SortableContext
+                                        items={tickets.map(t => t.id)}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        {tickets.map(
+                                            ticket => (
+                                                <SortableTicketCard
+                                                    key={ticket.id}
+                                                    ticket={ticket}
+                                                    selected={
+                                                        ticket.id ===
+                                                        selectedBacklogTicketId
+                                                    }
+                                                    onSelect={() => {
+                                                        onSelectBacklogTicket(
+                                                            ticket.id
+                                                        );
+                                                    }}
+                                                />
+                                            )
+                                        )}
+                                    </SortableContext>
                                 </div>
                             )}
                         </div>
@@ -109,23 +129,28 @@ export default function SprintBacklog({
                         Unassigned Tickets
                     </div>
 
-                    {unassignedTickets.map(
-                        ticket => (
-                            <TicketCard
-                                key={ticket.id}
-                                ticket={ticket}
-                                selected={
-                                    ticket.id ===
-                                    selectedBacklogTicketId
-                                }
-                                onSelect={() => {
-                                    onSelectBacklogTicket(
-                                        ticket.id
-                                    );
-                                }}
-                            />
-                        )
-                    )}
+                    <SortableContext
+                        items={unassignedTickets.map(t => t.id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        {unassignedTickets.map(
+                            ticket => (
+                                <SortableTicketCard
+                                    key={ticket.id}
+                                    ticket={ticket}
+                                    selected={
+                                        ticket.id ===
+                                        selectedBacklogTicketId
+                                    }
+                                    onSelect={() => {
+                                        onSelectBacklogTicket(
+                                            ticket.id
+                                        );
+                                    }}
+                                />
+                            )
+                        )}
+                    </SortableContext>
 
                     {!unassignedTickets.length &&
                         !backlogGroups.some(

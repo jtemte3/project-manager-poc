@@ -75,6 +75,12 @@ export interface ProjectContextType {
         sprintId: string
     ) => void;
 
+    assignTicketToSprintAtPosition: (
+        ticketId: string,
+        sprintId: string,
+        position: number
+    ) => void;
+
     removeTicketFromSprint: (
         ticketId: string
     ) => void;
