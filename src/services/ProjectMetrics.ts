@@ -42,7 +42,6 @@ export function syncSprintMetrics(
     const sprints = project.sprints.map(sprint => {
         const sprintTickets = project.tickets.filter(
             ticket =>
-                ticket.sprintId === sprint.id ||
                 sprint.ticketIds.includes(ticket.id)
         );
 
