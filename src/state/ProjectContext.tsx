@@ -109,6 +109,11 @@ export interface ProjectContextType {
         position: number
     ) => void;
 
+    reorderUnassignedTicket: (
+        ticketId: string,
+        newPosition: number
+    ) => void;
+
     // Editing state
     editingTicketId: string | null;
 

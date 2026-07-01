@@ -70,6 +70,31 @@ function EpicDropTarget({
 }
 
 /**
+ * Drop target for the unassigned tickets section.
+ * Allows dropping tickets from epics back to unassigned.
+ */
+function UnassignedDropTarget({
+    onDrop,
+    children,
+}: {
+    onDrop: () => void;
+    children: React.ReactNode;
+}) {
+    const { setNodeRef, isOver } = useDroppable({
+        id: "unassigned-drop",
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`unassigned-drop-target${isOver ? " unassigned-drop-target--over" : ""}`}
+        >
+            {children}
+        </div>
+    );
+}
+
+/**
  * Wrapper component that provides the active ticket ID to the DragOverlay.
  * This is needed because useDndContext must be used within a DndContext.
  */
@@ -122,6 +147,45 @@ function EpicTicketListWithOverlay({
     );
 }
 
+/**
+ * Wrapper component for unassigned tickets that tracks the active ticket.
+ */
+function UnassignedTicketListWithOverlay({
+    unassignedTickets,
+    unassignedTicketIds,
+    editingTicketId,
+    setEditingTicketId,
+    setActiveTicketId,
+}: {
+    unassignedTickets: Ticket[];
+    unassignedTicketIds: string[];
+    editingTicketId: string | null;
+    setEditingTicketId: (id: string | null) => void;
+    setActiveTicketId: (id: string | null) => void;
+}) {
+    const activeTicketId = useActiveTicket(unassignedTicketIds);
+
+    useEffect(() => {
+        setActiveTicketId(activeTicketId);
+    }, [activeTicketId, setActiveTicketId]);
+
+    return (
+        <SortableContext
+            items={unassignedTicketIds}
+            strategy={verticalListSortingStrategy}
+        >
+            {unassignedTickets.map(ticket => (
+                <SortableTicketCard
+                    key={ticket.id}
+                    ticket={ticket}
+                    selected={ticket.id === editingTicketId}
+                    onSelect={() => setEditingTicketId(ticket.id)}
+                />
+            ))}
+        </SortableContext>
+    );
+}
+
 export default function BacklogPage() {
     const {
         project,
@@ -131,6 +195,7 @@ export default function BacklogPage() {
         setEditingTicketId,
         reorderTicketInEpic,
         moveTicketToEpicAtPosition,
+        reorderUnassignedTicket,
     } = useProject();
 
     const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
@@ -236,12 +301,43 @@ export default function BacklogPage() {
                 return;
             }
 
+            // Check if dropped on unassigned drop target
+            if (overId === "unassigned-drop") {
+                // Move ticket to unassigned (add to end of unassigned list)
+                const targetIndex = project.unassignedTicketIds.length;
+                
+                // If the ticket is currently in an epic, we need to move it to unassigned
+                if (activeTicket.epicId) {
+                    // First remove from epic
+                    moveTicketToEpicAtPosition(activeId, "", targetIndex);
+                } else {
+                    // Just reorder within unassigned
+                    reorderUnassignedTicket(activeId, targetIndex);
+                }
+                return;
+            }
+
             // Find the epic that contains the drop target ticket
             const overTicket = project.tickets.find(
                 t => t.id === overId
             );
 
-            if (!overTicket || !overTicket.epicId) {
+            if (!overTicket) {
+                return;
+            }
+
+            // Check if the target ticket is unassigned
+            if (!overTicket.epicId) {
+                // Dropping onto an unassigned ticket
+                const targetIndex = project.unassignedTicketIds.indexOf(overId);
+                
+                if (activeTicket.epicId) {
+                    // Moving from epic to unassigned
+                    moveTicketToEpicAtPosition(activeId, "", targetIndex);
+                } else {
+                    // Reordering within unassigned
+                    reorderUnassignedTicket(activeId, targetIndex);
+                }
                 return;
             }
 
@@ -264,17 +360,19 @@ export default function BacklogPage() {
             // - Reordering within the same epic
             moveTicketToEpicAtPosition(activeId, targetEpicId, targetIndex);
         },
-        [project, moveTicketToEpicAtPosition]
+        [project, moveTicketToEpicAtPosition, reorderUnassignedTicket]
     );
 
     if (!project) {
         return null;
     }
 
-    const unassignedTickets =
-        project.tickets.filter(
-            ticket => !ticket.epicId
-        );
+    // Get unassigned tickets ordered by unassignedTicketIds
+    const unassignedTickets = project.unassignedTicketIds
+        .map(ticketId =>
+            project.tickets.find(t => t.id === ticketId)
+        )
+        .filter((ticket): ticket is NonNullable<typeof ticket> => ticket !== undefined);
 
     return (
         <DndContext
@@ -373,35 +471,27 @@ export default function BacklogPage() {
                             }
                         )}
 
-                        <div className="backlog-unassigned">
-                            <div className="backlog-section-label">
-                                Unassigned Tickets
+                        <UnassignedDropTarget onDrop={() => {}}>
+                            <div className="backlog-unassigned">
+                                <div className="backlog-section-label">
+                                    Unassigned Tickets
+                                </div>
+
+                                <UnassignedTicketListWithOverlay
+                                    unassignedTickets={unassignedTickets}
+                                    unassignedTicketIds={project.unassignedTicketIds}
+                                    editingTicketId={editingTicketId}
+                                    setEditingTicketId={setEditingTicketId}
+                                    setActiveTicketId={setActiveTicketId}
+                                />
+
+                                <AddTicketCard
+                                    onClick={() =>
+                                        addTicket()
+                                    }
+                                />
                             </div>
-
-                            {unassignedTickets.map(
-                                ticket => (
-                                    <TicketCard
-                                        key={ticket.id}
-                                        ticket={ticket}
-                                        selected={
-                                            ticket.id ===
-                                            editingTicketId
-                                        }
-                                        onSelect={() =>
-                                            setEditingTicketId(
-                                                ticket.id
-                                            )
-                                        }
-                                    />
-                                )
-                            )}
-
-                            <AddTicketCard
-                                onClick={() =>
-                                    addTicket()
-                                }
-                            />
-                        </div>
+                        </UnassignedDropTarget>
                     </div>
                 </section>
 

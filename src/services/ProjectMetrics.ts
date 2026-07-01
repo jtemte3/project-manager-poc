@@ -29,10 +29,16 @@ export function normalizeProjectState(
     const tickets = project.tickets.map(normalizeTicket);
     const sprints = project.sprints.map(normalizeSprint);
 
+    // Build unassignedTicketIds from tickets that don't have an epicId
+    const unassignedTicketIds = project.unassignedTicketIds ?? tickets
+        .filter(t => !t.epicId)
+        .map(t => t.id);
+
     return syncSprintMetrics({
         ...project,
         tickets,
         sprints,
+        unassignedTicketIds,
     });
 }
 

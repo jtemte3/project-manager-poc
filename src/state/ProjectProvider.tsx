@@ -176,6 +176,11 @@ export default function ProjectProvider({
     function deleteEpic(epicId: string) {
         if (!activeProject) return;
 
+        // Collect ticket ids that will become unassigned
+        const unassigningTicketIds = activeProject.tickets
+            .filter(ticket => ticket.epicId === epicId)
+            .map(ticket => ticket.id);
+
         commitActiveProject({
             epics: activeProject.epics.filter(
                 epic => epic.id !== epicId
@@ -188,6 +193,11 @@ export default function ProjectProvider({
                     }
                     : ticket
             ),
+            // Add unassigned tickets to unassignedTicketIds
+            unassignedTicketIds: [
+                ...(activeProject.unassignedTicketIds ?? []),
+                ...unassigningTicketIds,
+            ],
         });
     }
 
@@ -217,9 +227,15 @@ export default function ProjectProvider({
             )
             : activeProject.epics;
 
+        // If adding unassigned ticket, add to unassignedTicketIds
+        const updatedUnassignedTicketIds = !epicId
+            ? [...(activeProject.unassignedTicketIds ?? []), newTicket.id]
+            : activeProject.unassignedTicketIds;
+
         commitActiveProject({
             tickets: [...activeProject.tickets, newTicket],
             epics: updatedEpics,
+            unassignedTicketIds: updatedUnassignedTicketIds,
         });
 
         setEditingTicketId(newTicket.id);
@@ -245,6 +261,7 @@ export default function ProjectProvider({
 
         // Update epics if the epic assignment changed
         let updatedEpics = activeProject.epics;
+        let updatedUnassignedTicketIds = activeProject.unassignedTicketIds;
 
         if (newEpicId !== undefined && newEpicId !== oldEpicId) {
             updatedEpics = activeProject.epics.map(epic => {
@@ -266,6 +283,20 @@ export default function ProjectProvider({
                 }
                 return epic;
             });
+
+            // Update unassignedTicketIds
+            if (!oldEpicId && newEpicId) {
+                // Moving from unassigned to epic - remove from unassigned
+                updatedUnassignedTicketIds = (activeProject.unassignedTicketIds ?? []).filter(
+                    id => id !== ticketId
+                );
+            } else if (oldEpicId && !newEpicId) {
+                // Moving from epic to unassigned - add to unassigned
+                updatedUnassignedTicketIds = [
+                    ...(activeProject.unassignedTicketIds ?? []),
+                    ticketId,
+                ];
+            }
         }
 
         commitActiveProject({
@@ -293,6 +324,7 @@ export default function ProjectProvider({
                 return nextTicket;
             }),
             epics: updatedEpics,
+            unassignedTicketIds: updatedUnassignedTicketIds,
         });
     }
 
@@ -318,6 +350,13 @@ export default function ProjectProvider({
             )
             : activeProject.epics;
 
+        // Remove from unassignedTicketIds if unassigned
+        const updatedUnassignedTicketIds = !ticket?.epicId
+            ? (activeProject.unassignedTicketIds ?? []).filter(
+                id => id !== ticketId
+            )
+            : activeProject.unassignedTicketIds;
+
         commitActiveProject({
             tickets: activeProject.tickets.filter(
                 ticket => ticket.id !== ticketId
@@ -329,6 +368,7 @@ export default function ProjectProvider({
                 ),
             })),
             epics: updatedEpics,
+            unassignedTicketIds: updatedUnassignedTicketIds,
         });
     }
 
@@ -648,8 +688,9 @@ export default function ProjectProvider({
     }
 
     /**
-     * Move a ticket from one epic (or from unassigned) to another epic at a specific position.
-     * This is an atomic operation that handles cross-epic drag-and-drop.
+     * Move a ticket between containers (epics or unassigned) at a specific position.
+     * Empty string targetEpicId means moving to unassigned.
+     * This is an atomic operation that handles cross-container drag-and-drop.
      */
     function moveTicketToEpicAtPosition(
         ticketId: string,
@@ -669,17 +710,50 @@ export default function ProjectProvider({
 
         const oldEpicId = ticket.epicId;
 
-        // If moving to the same epic, just reorder
-        if (oldEpicId === targetEpicId) {
+        // If moving to the same epic, just reorder within epic
+        if (oldEpicId === targetEpicId && oldEpicId) {
             reorderTicketInEpic(targetEpicId, ticketId, position);
             return;
+        }
+
+        // If moving within unassigned, just reorder within unassigned
+        if (!oldEpicId && !targetEpicId) {
+            reorderUnassignedTicket(ticketId, position);
+            return;
+        }
+
+        // Calculate updated unassignedTicketIds
+        let updatedUnassignedTicketIds = activeProject.unassignedTicketIds ?? [];
+
+        // Moving from unassigned to epic - remove from unassigned
+        if (!oldEpicId && targetEpicId) {
+            updatedUnassignedTicketIds = updatedUnassignedTicketIds.filter(
+                id => id !== ticketId
+            );
+        }
+        // Moving from epic to unassigned - add to unassigned at position
+        else if (oldEpicId && !targetEpicId) {
+            const ticketIds = [...updatedUnassignedTicketIds];
+            // Remove if already present (shouldn't happen)
+            const existingIndex = ticketIds.indexOf(ticketId);
+            if (existingIndex !== -1) {
+                ticketIds.splice(existingIndex, 1);
+            }
+            // Clamp position
+            const clampedPosition = Math.min(
+                Math.max(0, position),
+                ticketIds.length
+            );
+            // Insert at position
+            ticketIds.splice(clampedPosition, 0, ticketId);
+            updatedUnassignedTicketIds = ticketIds;
         }
 
         commitActiveProject({
             // Update the ticket's epicId
             tickets: activeProject.tickets.map(t =>
                 t.id === ticketId
-                    ? { ...t, epicId: targetEpicId }
+                    ? { ...t, epicId: targetEpicId || undefined }
                     : t
             ),
             // Update all epics: remove from old, add to new at position
@@ -694,8 +768,8 @@ export default function ProjectProvider({
                     };
                 }
 
-                // Handle target epic - insert ticket at position
-                if (epic.id === targetEpicId) {
+                // Handle target epic - insert ticket at position (only if targetEpicId is set)
+                if (targetEpicId && epic.id === targetEpicId) {
                     const ticketIds = [...(epic.ticketIds ?? [])];
 
                     // Remove ticket if already present (shouldn't happen, but safety check)
@@ -721,6 +795,40 @@ export default function ProjectProvider({
 
                 return epic;
             }),
+            unassignedTicketIds: updatedUnassignedTicketIds,
+        });
+    }
+
+    /**
+     * Reorder a ticket within the unassigned tickets list.
+     * This is useful for drag-and-drop reordering in the backlog.
+     */
+    function reorderUnassignedTicket(
+        ticketId: string,
+        newPosition: number
+    ) {
+        if (!activeProject) return;
+
+        const unassignedTicketIds = [...(activeProject.unassignedTicketIds ?? [])];
+
+        // Remove the ticket from its current position
+        const currentIndex = unassignedTicketIds.indexOf(ticketId);
+        if (currentIndex === -1) {
+            return; // Ticket not in unassigned list
+        }
+        unassignedTicketIds.splice(currentIndex, 1);
+
+        // Clamp position to valid range
+        const clampedPosition = Math.min(
+            Math.max(0, newPosition),
+            unassignedTicketIds.length
+        );
+
+        // Insert at the new position
+        unassignedTicketIds.splice(clampedPosition, 0, ticketId);
+
+        commitActiveProject({
+            unassignedTicketIds,
         });
     }
 
@@ -765,6 +873,7 @@ export default function ProjectProvider({
                 deleteEpic,
                 reorderTicketInEpic,
                 moveTicketToEpicAtPosition,
+                reorderUnassignedTicket,
 
                 // Editing state
                 editingTicketId,
