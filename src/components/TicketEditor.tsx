@@ -2,6 +2,7 @@ import { type Ticket } from "../models/Ticket";
 
 import ChecklistEditor from "./ChecklistEditor";
 import CommentsEditor from "./CommentsEditor";
+import RichTextEditor from "./RichTextEditor";
 import { useProject } from "../hooks/useProject";
 import { getEpicColor } from "../utils/getEpicColor";
 import FormField from "./FormField";
@@ -182,19 +183,9 @@ export default function TicketEditor({
                 label="Description"
                 helpText="Describe the work, goals, or notes for this ticket."
             >
-                <textarea
-                    style={inputStyle}
-                    rows={8}
+                <RichTextEditor
                     value={ticket.description}
-                    onChange={e =>
-                        updateTicket(
-                            ticket.id,
-                            {
-                                description:
-                                    e.target.value,
-                            }
-                        )
-                    }
+                    onChange={(value) => updateTicket(ticket.id, { description: value })}
                 />
             </FormField>
 
@@ -213,7 +204,7 @@ export default function TicketEditor({
                         setEditingTicketId(null);
                     }}
                 >
-                    Delete
+                    Delete Ticket
                 </button>
             </div>
         </div>

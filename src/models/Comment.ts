@@ -1,7 +1,7 @@
 export interface Comment {
     id: string;
 
-    text: string;
+    content: string;
 
     timestamp: string;
 }

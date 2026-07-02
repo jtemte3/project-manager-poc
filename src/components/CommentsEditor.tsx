@@ -6,6 +6,8 @@ import { type Comment } from "../models/Comment";
 import { useProject } from "../hooks/useProject";
 
 import { createId } from "../utils/createId";
+import { decodeRichText } from "../utils/richText";
+import RichTextEditor from "./RichTextEditor";
 
 interface Props {
     ticket: Ticket;
@@ -20,8 +22,8 @@ export default function CommentsEditor({
     } = useProject();
 
     const [
-        newCommentText,
-        setNewCommentText,
+        newCommentContent,
+        setNewCommentContent,
     ] = useState("");
 
     const [
@@ -30,16 +32,21 @@ export default function CommentsEditor({
     ] = useState<string | null>(null);
 
     const [
-        editText,
-        setEditText,
+        editContent,
+        setEditContent,
     ] = useState("");
+
+    const [
+        showNewCommentForm,
+        setShowNewCommentForm,
+    ] = useState(false);
 
     function addComment() {
 
-        const text =
-            newCommentText.trim();
+        const content =
+            newCommentContent.trim();
 
-        if (!text) {
+        if (!content) {
             return;
         }
 
@@ -47,7 +54,7 @@ export default function CommentsEditor({
 
         const newComment: Comment = {
             id: newCommentId,
-            text,
+            content,
             timestamp: new Date().toISOString(),
         };
 
@@ -61,12 +68,13 @@ export default function CommentsEditor({
             }
         );
 
-        setNewCommentText("");
+        setNewCommentContent("");
+        setShowNewCommentForm(false);
     }
 
     function updateComment(
         commentId: string,
-        text: string
+        content: string
     ) {
 
         updateTicket(
@@ -78,7 +86,7 @@ export default function CommentsEditor({
                             comment.id === commentId
                                 ? {
                                     ...comment,
-                                    text,
+                                    content,
                                 }
                                 : comment
                     ),
@@ -106,23 +114,23 @@ export default function CommentsEditor({
         comment: Comment
     ) {
         setEditingCommentId(comment.id);
-        setEditText(comment.text);
+        setEditContent(comment.content);
     }
 
     function cancelEditing() {
         setEditingCommentId(null);
-        setEditText("");
+        setEditContent("");
     }
 
     function saveEditing() {
         if (editingCommentId) {
             updateComment(
                 editingCommentId,
-                editText.trim()
+                editContent.trim()
             );
         }
         setEditingCommentId(null);
-        setEditText("");
+        setEditContent("");
     }
 
     function formatTimestamp(
@@ -131,23 +139,6 @@ export default function CommentsEditor({
         const date = new Date(timestamp);
         return date.toLocaleString();
     }
-
-    const handleNewCommentKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            addComment();
-        }
-    };
-
-    const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            saveEditing();
-        }
-        if (e.key === "Escape") {
-            cancelEditing();
-        }
-    };
 
     return (
         <div className="comments-editor">
@@ -166,17 +157,10 @@ export default function CommentsEditor({
                                 <div className="comments-editor__row">
                                     {editingCommentId === comment.id ? (
                                         <div className="comments-editor__edit-form">
-                                            <textarea
-                                                value={editText}
-                                                onChange={e =>
-                                                    setEditText(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                onKeyDown={
-                                                    handleEditKeyDown
-                                                }
-                                                rows={3}
+                                            <RichTextEditor
+                                                value={editContent}
+                                                onChange={setEditContent}
+                                                minHeight="100px"
                                             />
                                             <div className="comments-editor__edit-actions">
                                                 <button
@@ -196,9 +180,9 @@ export default function CommentsEditor({
                                             </div>
                                         </div>
                                     ) : (
-                                        <p className="comments-editor__text">
-                                            {comment.text}
-                                        </p>
+                                        <div className="comments-editor__text">
+                                            <div dangerouslySetInnerHTML={{ __html: decodeRichText(comment.content) }} />
+                                        </div>
                                     )}
 
                                     <div className="comments-editor__actions">
@@ -238,26 +222,34 @@ export default function CommentsEditor({
             </div>
 
             <div className="comments-editor__add-form">
-                <textarea
-                    className="comments-editor__add-input"
-                    placeholder="Add a comment..."
-                    value={newCommentText}
-                    onChange={e =>
-                        setNewCommentText(
-                            e.target.value
-                        )
-                    }
-                    onKeyDown={
-                        handleNewCommentKeyDown
-                    }
-                    rows={2}
-                />
-
-                <button
-                    onClick={addComment}
-                >
-                    Add Comment
-                </button>
+                {showNewCommentForm ? (
+                    <>
+                        <RichTextEditor
+                            value={newCommentContent}
+                            onChange={setNewCommentContent}
+                            minHeight="80px"
+                        />
+                        <div className="comments-editor__add-actions">
+                            <button
+                                onClick={() => setShowNewCommentForm(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={addComment}
+                            >
+                                Add Comment
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <button
+                        className="comments-editor__add-button"
+                        onClick={() => setShowNewCommentForm(true)}
+                    >
+                        + Add Comment
+                    </button>
+                )}
             </div>
         </div>
     );
