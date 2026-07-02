@@ -110,7 +110,8 @@
 .comments-editor__edit-actions {
   display: flex;
   gap: 8px;
-  justify-content: flex-end;
+  justify-content: center;
+  margin: 12px;
 }
 
 .comments-editor__actions {
@@ -141,11 +142,12 @@
 .comments-editor__add-actions {
   display: flex;
   gap: 8px;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .comments-editor__add-button {
-  width: 100%;
+  width: 25%;
+  margin: 0 auto;
   padding: 10px 16px;
   background: #f0f3f8;
   border: 1px dashed #cfd6e4;

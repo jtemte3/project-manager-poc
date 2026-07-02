@@ -25,6 +25,9 @@
 
 .backlog-list-panel {
   min-height: 0;
+  max-width: 1120px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .backlog-detail-panel {
