@@ -162,29 +162,12 @@ export default function CommentsEditor({
                                                 onChange={setEditContent}
                                                 minHeight="100px"
                                             />
-                                            <div className="comments-editor__edit-actions">
-                                                <button
-                                                    onClick={
-                                                        cancelEditing
-                                                    }
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    onClick={
-                                                        saveEditing
-                                                    }
-                                                >
-                                                    Save
-                                                </button>
-                                            </div>
                                         </div>
                                     ) : (
                                         <div className="comments-editor__text">
                                             <div dangerouslySetInnerHTML={{ __html: decodeRichText(comment.content) }} />
                                         </div>
                                     )}
-
                                     <div className="comments-editor__actions">
                                         {editingCommentId !== comment.id && (
                                             <button
@@ -209,6 +192,24 @@ export default function CommentsEditor({
                                         </button>
                                     </div>
                                 </div>
+                                {editingCommentId === comment.id && (
+                                    <div className="comments-editor__edit-actions">
+                                        <button
+                                            onClick={
+                                                cancelEditing
+                                            }
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={
+                                                saveEditing
+                                            }
+                                        >
+                                            Save
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <span className="comments-editor__timestamp">

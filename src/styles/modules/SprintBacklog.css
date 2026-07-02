@@ -46,13 +46,8 @@
 }
 
 /* Backlog scroll area - serves as drop zone for tickets dragged out of sprint */
-.backlog-scroll {
+.sprint-backlog-scroll {
   transition: background-color 0.2s ease;
   border-radius: 8px;
-  padding: 4px;
-  margin: -4px;
-}
-
-.backlog-scroll[data-dnd-droppable="true"] {
-  /* Subtle indicator that this is a drop zone */
+  padding: 20px;
 }

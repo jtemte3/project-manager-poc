@@ -59,7 +59,7 @@ export default function SprintBacklog({
 
             <div
                 ref={setBacklogDropRef}
-                className="backlog-scroll"
+                className="sprint-backlog-scroll"
             >
                 <div className="backlog-section-label">
                     Backlog
