@@ -260,3 +260,151 @@
   border-top: 2px solid #e5e7eb;
   margin: 1em 0;
 }
+
+/* ============================================
+   Description + Checklist Split Layout
+   ============================================ */
+
+.description-checklist-wrapper {
+  position: relative;
+}
+
+/* Checklist Toggle Button - positioned top-right of the rich text editor */
+.checklist-toggle-btn {
+  position: absolute;
+  top: -36px;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.checklist-toggle-btn:hover {
+  background: #f3f4f6;
+  border-color: #5b7cff;
+}
+
+.checklist-toggle-btn.is-active {
+  background: #5b7cff;
+  color: #ffffff;
+  border-color: #5b7cff;
+}
+
+.checklist-toggle-btn.is-active:hover {
+  background: #4a6ae6;
+  border-color: #4a6ae6;
+}
+
+.checklist-toggle-btn__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.checklist-toggle-btn__text {
+  white-space: nowrap;
+}
+
+/* Split View Container */
+.description-checklist-split {
+  display: flex;
+  gap: 16px;
+  min-height: 400px;
+}
+
+/* Description Editor Panel - takes 2/3 when split */
+.description-editor-panel {
+  flex: 2;
+  min-width: 0;
+  transition: flex 0.3s ease;
+}
+
+/* Checklist Panel - slides in from right, takes 1/3 */
+.checklist-panel {
+  flex: 0;
+  overflow: hidden;
+  opacity: 0;
+  max-width: 0;
+  transition: flex 0.3s ease, opacity 0.25s ease, max-width 0.3s ease;
+}
+
+.checklist-panel.is-visible {
+  flex: 1;
+  min-width: 240px;
+  opacity: 1;
+  max-width: none;
+}
+
+/* When split, add a subtle divider */
+.description-checklist-split.is-split {
+  position: relative;
+}
+
+.description-checklist-split.is-split::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(66.666% - 1px);
+  width: 2px;
+  background: #e5e7eb;
+  pointer-events: none;
+}
+
+/* Checklist Editor Styles */
+.checklist-editor {
+  background: #fafbfc;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.checklist-editor h4 {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2a44;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.checklist-editor > div:last-child {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive: on smaller screens, stack vertically */
+@media (max-width: 768px) {
+  .description-checklist-split {
+    flex-direction: column;
+  }
+
+  .checklist-panel {
+    max-width: none;
+    flex: none;
+    height: 0;
+  }
+
+  .checklist-panel.is-visible {
+    height: auto;
+    flex: none;
+  }
+
+  .description-checklist-split.is-split::after {
+    display: none;
+  }
+}

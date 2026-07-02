@@ -99,10 +99,10 @@ export default function SortableChecklistElement({
                 onKeyDown={handleKeyDown}
             />
 
-            <button
+            <button className="checklist-delete-button"
                 onClick={() => onDelete(item.id)}
             >
-                Delete
+                X
             </button>
         </div>
     );

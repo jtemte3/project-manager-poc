@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 import { type Ticket } from "../models/Ticket";
 
 import ChecklistEditor from "./ChecklistEditor";
@@ -23,6 +25,16 @@ export default function TicketEditor({
         setEditingTicketId,
     } = useProject();
 
+    // Track if checklist panel is visible
+    const [showChecklistPanel, setShowChecklistPanel] = useState(false);
+
+    // If ticket has checklist items, show the panel by default
+    useEffect(() => {
+        if (ticket.checklist.length > 0) {
+            setShowChecklistPanel(true);
+        }
+    }, [ticket.checklist.length]);
+
     if (!project) {
         return null;
     }
@@ -36,6 +48,10 @@ export default function TicketEditor({
         width: "100%",
         boxSizing: "border-box" as const,
     };
+
+    function handleToggleChecklistPanel() {
+        setShowChecklistPanel(prev => !prev);
+    }
 
     return (
         <div
@@ -183,13 +199,38 @@ export default function TicketEditor({
                 label="Description"
                 helpText="Describe the work, goals, or notes for this ticket."
             >
-                <RichTextEditor
-                    value={ticket.description}
-                    onChange={(value) => updateTicket(ticket.id, { description: value })}
-                />
-            </FormField>
+                <div className="description-checklist-wrapper">
+                    {/* Checklist Toggle Button */}
+                    <button
+                        type="button"
+                        className={`checklist-toggle-btn ${showChecklistPanel ? "is-active" : ""}`}
+                        onClick={handleToggleChecklistPanel}
+                    >
+                        {/* <span className="checklist-toggle-btn__icon">
+                            ☑
+                        </span> */}
+                        <span className="checklist-toggle-btn__text">
+                            {showChecklistPanel ? "🗹 Hide Checklist" : "☐ Show Checklist"}
+                        </span>
+                    </button>
 
-            <ChecklistEditor ticket={ticket} />
+                    {/* Split View Container */}
+                    <div className={`description-checklist-split ${showChecklistPanel ? "is-split" : ""}`}>
+                        {/* Rich Text Editor - takes 2/3 when split, full when not */}
+                        <div className="description-editor-panel">
+                            <RichTextEditor
+                                value={ticket.description}
+                                onChange={(value) => updateTicket(ticket.id, { description: value })}
+                            />
+                        </div>
+
+                        {/* Checklist Panel - slides in from right, takes 1/3 */}
+                        <div className={`checklist-panel ${showChecklistPanel ? "is-visible" : ""}`}>
+                            <ChecklistEditor ticket={ticket} />
+                        </div>
+                    </div>
+                </div>
+            </FormField>
 
             <CommentsEditor ticket={ticket} />
 
