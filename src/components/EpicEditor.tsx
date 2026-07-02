@@ -1,12 +1,9 @@
-import { type Epic }
-from "../models/Epic";
+import { type Epic } from "../models/Epic";
 
-import {
-    useProject
-}
-from "../hooks/useProject";
+import { useProject } from "../hooks/useProject";
 
 import FormField from "./FormField";
+import RichTextEditor from "./RichTextEditor";
 
 interface Props {
     epic: Epic;
@@ -15,12 +12,12 @@ interface Props {
 
 export default function EpicEditor({
     epic,
-    onClose
+    onClose,
 }: Props) {
 
     const {
         updateEpic,
-        deleteEpic
+        deleteEpic,
     } = useProject();
 
     const inputStyle = {
@@ -69,7 +66,7 @@ export default function EpicEditor({
                             epic.id,
                             {
                                 name:
-                                    e.target.value
+                                    e.target.value,
                             }
                         )
                     }
@@ -80,19 +77,9 @@ export default function EpicEditor({
                 label="Description"
                 helpText="Describe the goals or scope of this epic."
             >
-                <textarea
-                    style={inputStyle}
-                    rows={6}
+                <RichTextEditor
                     value={epic.description}
-                    onChange={e =>
-                        updateEpic(
-                            epic.id,
-                            {
-                                description:
-                                    e.target.value
-                            }
-                        )
-                    }
+                    onChange={(value) => updateEpic(epic.id, { description: value })}
                 />
             </FormField>
 
@@ -108,7 +95,7 @@ export default function EpicEditor({
                             epic.id,
                             {
                                 color:
-                                    e.target.value
+                                    e.target.value,
                             }
                         )
                     }

@@ -50,12 +50,6 @@ export default function TicketCard({
                 <div className="ticket-row__title">
                     {ticket.title || "Untitled Ticket"}
                 </div>
-
-                {ticket.description && (
-                    <div className="ticket-row__description">
-                        {ticket.description}
-                    </div>
-                )}
             </div>
 
             <div className="ticket-row__meta">
