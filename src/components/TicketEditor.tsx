@@ -64,6 +64,9 @@ export default function TicketEditor({
                 <div>
                     <div className="ticket-detail__eyebrow">
                         Ticket details
+                        <span className="ticket-detail__id">
+                            {ticket.id}
+                        </span>
                     </div>
                     <h2 className="ticket-detail__title">
                         {ticket.title || "Untitled Ticket"}
