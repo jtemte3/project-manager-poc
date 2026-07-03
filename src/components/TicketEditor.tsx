@@ -226,7 +226,7 @@ export default function TicketEditor({
 
                         {/* Checklist Panel - slides in from right, takes 1/3 */}
                         <div className={`checklist-panel ${showChecklistPanel ? "is-visible" : ""}`}>
-                            <ChecklistEditor ticket={ticket} />
+                            <ChecklistEditor ticket={ticket} showChecklistPanel={showChecklistPanel} />
                         </div>
                     </div>
                 </div>

@@ -16,3 +16,12 @@
   font-weight: 400;
   font-size: 20px;
 }
+
+.checkbox-inputfield{
+  height: auto;
+  text-wrap: balance;
+}
+
+.checklist-textarea{
+  resize: none;
+}
