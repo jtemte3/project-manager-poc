@@ -64,5 +64,28 @@ export function useEpics({
     });
   }
 
-  return { addEpic, updateEpic, deleteEpic };
+  function reorderEpic(epicId: string, newPosition: number) {
+    if (!activeProject) return;
+
+    const epics = [...activeProject.epics];
+    const currentIndex = epics.findIndex(epic => epic.id === epicId);
+    if (currentIndex === -1) return;
+
+    // Remove the epic and save a reference to it
+    const [epic] = epics.splice(currentIndex, 1);
+
+    const clampedPosition = Math.min(
+      Math.max(0, newPosition),
+      epics.length
+    );
+
+    // Insert the saved epic at the new position
+    epics.splice(clampedPosition, 0, epic);
+
+    commitActiveProject({
+      epics,
+    });
+  }
+
+  return { addEpic, updateEpic, deleteEpic, reorderEpic };
 }

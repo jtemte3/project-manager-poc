@@ -22,6 +22,7 @@ import AddTicketCard from "../components/AddTicketCard";
 import TicketEditor from "../components/TicketEditor";
 import EpicEditor from "../components/EpicEditor";
 import SortableTicketCard from "../components/SortableTicketCard";
+import SortableEpicCard from "../components/SortableEpicCard";
 import { useProject } from "../hooks/useProject";
 import { type Ticket } from "../models/Ticket";
 import { DND_DELAY_MS, DND_TOLERANCE_PX } from "../utils/dndConstants";
@@ -186,6 +187,97 @@ function UnassignedTicketListWithOverlay({
     );
 }
 
+/**
+ * Wrapper component that tracks the active epic for the DragOverlay.
+ */
+function EpicListWithOverlay({
+    epicIds,
+    expandedEpics,
+    toggleEpic,
+    setEditingEpicId,
+    setActiveEpicId,
+    project,
+    addTicket,
+    editingTicketId,
+    setEditingTicketId,
+    setActiveTicketId,
+}: {
+    epicIds: string[];
+    expandedEpics: Set<string>;
+    toggleEpic: (epicId: string) => void;
+    setEditingEpicId: (id: string | null) => void;
+    setActiveEpicId: (id: string | null) => void;
+    project: NonNullable<ReturnType<typeof useProject>["project"]>;
+    addTicket: (epicId?: string) => void;
+    editingTicketId: string | null;
+    setEditingTicketId: (id: string | null) => void;
+    setActiveTicketId: (id: string | null) => void;
+}) {
+    const { active } = useDndContext();
+
+    useEffect(() => {
+        if (!active) {
+            setActiveEpicId(null);
+            return;
+        }
+
+        const isActiveEpic = epicIds.includes(active.id as string);
+        setActiveEpicId(isActiveEpic ? active.id as string : null);
+    }, [active, epicIds, setActiveEpicId]);
+
+    return (
+        <SortableContext
+            items={epicIds}
+            strategy={verticalListSortingStrategy}
+        >
+            {project.epics.map(
+                epic => {
+                    // Get tickets ordered by the epic's ticketIds list
+                    const epicTickets = epic.ticketIds
+                        .map(ticketId =>
+                            project.tickets.find(
+                                t => t.id === ticketId
+                            )
+                        )
+                        .filter((ticket): ticket is NonNullable<typeof ticket> => ticket !== undefined);
+
+                    return (
+                        <div
+                            key={epic.id}
+                            className="backlog-epic-group"
+                        >
+                            <SortableEpicCard
+                                epic={epic}
+                                expanded={expandedEpics.has(epic.id)}
+                                onToggle={() => toggleEpic(epic.id)}
+                                onSelect={() =>
+                                    setEditingEpicId(
+                                        epic.id
+                                    )
+                                }
+                            />
+
+                            {expandedEpics.has(epic.id) && (
+                                <div className="backlog-ticket-list">
+                                    <EpicTicketListWithOverlay
+                                        epic={epic}
+                                        epicTickets={epicTickets}
+                                        ticketIds={epic.ticketIds}
+                                        editingTicketId={editingTicketId}
+                                        setEditingTicketId={setEditingTicketId}
+                                        setActiveTicketId={setActiveTicketId}
+                                        onDropToEpic={(epicId) => addTicket(epicId)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
+            )}
+        </SortableContext>
+    );
+}
+
 export default function BacklogPage() {
     const {
         project,
@@ -196,11 +288,13 @@ export default function BacklogPage() {
         reorderTicketInEpic,
         moveTicketToEpicAtPosition,
         reorderUnassignedTicket,
+        reorderEpic,
     } = useProject();
 
     const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
     const [editingEpicId, setEditingEpicId] = useState<string | null>(null);
     const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+    const [activeEpicId, setActiveEpicId] = useState<string | null>(null);
 
     // Dnd-kit sensors for drag activation constraints
     const sensors = useSensors(
@@ -239,6 +333,11 @@ export default function BacklogPage() {
             ? project?.tickets.find(t => t.id === activeTicketId) ?? null
             : null;
 
+    const activeEpic =
+        activeEpicId
+            ? project?.epics.find(e => e.id === activeEpicId) ?? null
+            : null;
+
     // -------------------------
     // Drag and Drop Handlers
     // -------------------------
@@ -247,12 +346,28 @@ export default function BacklogPage() {
         (event: DragEndEvent) => {
             const { active, over } = event;
 
+            // Clear active IDs first to prevent stale references during re-render
+            setActiveTicketId(null);
+            setActiveEpicId(null);
+
             if (!over || !project) {
                 return;
             }
 
             const activeId = active.id as string;
             const overId = over.id as string;
+
+            // Check if an epic is being dragged
+            const activeEpic = project.epics.find(e => e.id === activeId);
+            if (activeEpic) {
+                // Epic drag handling
+                const overEpic = project.epics.find(e => e.id === overId);
+                if (overEpic) {
+                    const targetIndex = project.epics.indexOf(overEpic);
+                    reorderEpic(activeId, targetIndex);
+                }
+                return;
+            }
 
             // Find the ticket that was dragged
             const activeTicket = project.tickets.find(
@@ -337,7 +452,7 @@ export default function BacklogPage() {
             // - Reordering within the same epic
             moveTicketToEpicAtPosition(activeId, targetEpicId, targetIndex);
         },
-        [project, moveTicketToEpicAtPosition, reorderUnassignedTicket]
+        [project, moveTicketToEpicAtPosition, reorderUnassignedTicket, reorderEpic]
     );
 
     if (!project) {
@@ -350,6 +465,8 @@ export default function BacklogPage() {
             project.tickets.find(t => t.id === ticketId)
         )
         .filter((ticket): ticket is NonNullable<typeof ticket> => ticket !== undefined);
+
+    const epicIds = project.epics.map(epic => epic.id);
 
     return (
         <DndContext
@@ -403,50 +520,18 @@ export default function BacklogPage() {
                     </div>
 
                     <div className="backlog-scroll">
-                        {project.epics.map(
-                            epic => {
-                                // Get tickets ordered by the epic's ticketIds list
-                                const epicTickets = epic.ticketIds
-                                    .map(ticketId =>
-                                        project.tickets.find(
-                                            t => t.id === ticketId
-                                        )
-                                    )
-                                    .filter((ticket): ticket is NonNullable<typeof ticket> => ticket !== undefined);
-
-                                return (
-                                    <div
-                                        key={epic.id}
-                                        className="backlog-epic-group"
-                                    >
-                                        <EpicCard
-                                            epic={epic}
-                                            expanded={expandedEpics.has(epic.id)}
-                                            onToggle={() => toggleEpic(epic.id)}
-                                            onSelect={() =>
-                                                setEditingEpicId(
-                                                    epic.id
-                                                )
-                                            }
-                                        />
-
-                                        {expandedEpics.has(epic.id) && (
-                                            <div className="backlog-ticket-list">
-                                                <EpicTicketListWithOverlay
-                                                    epic={epic}
-                                                    epicTickets={epicTickets}
-                                                    ticketIds={epic.ticketIds}
-                                                    editingTicketId={editingTicketId}
-                                                    setEditingTicketId={setEditingTicketId}
-                                                    setActiveTicketId={setActiveTicketId}
-                                                    onDropToEpic={(epicId) => addTicket(epicId)}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            }
-                        )}
+                        <EpicListWithOverlay
+                            epicIds={epicIds}
+                            expandedEpics={expandedEpics}
+                            toggleEpic={toggleEpic}
+                            setEditingEpicId={setEditingEpicId}
+                            setActiveEpicId={setActiveEpicId}
+                            project={project}
+                            addTicket={addTicket}
+                            editingTicketId={editingTicketId}
+                            setEditingTicketId={setEditingTicketId}
+                            setActiveTicketId={setActiveTicketId}
+                        />
 
                         <UnassignedDropTarget onDrop={() => {}}>
                             <div className="backlog-unassigned">
@@ -525,10 +610,16 @@ export default function BacklogPage() {
                 )}
             </div>
 
-            {/* DragOverlay shows the ticket while it's being dragged */}
+            {/* DragOverlay shows the ticket or epic while it's being dragged */}
             <DragOverlay>
                 {activeTicket ? (
                     <TicketCard ticket={activeTicket} />
+                ) : activeEpic ? (
+                    <EpicCard
+                        epic={activeEpic}
+                        expanded={expandedEpics.has(activeEpic.id)}
+                        onToggle={() => {}}
+                    />
                 ) : null}
             </DragOverlay>
         </DndContext>

@@ -134,6 +134,7 @@ export default function ProjectProvider({ children }: Props) {
         addEpic: epics.addEpic,
         updateEpic: epics.updateEpic,
         deleteEpic: epics.deleteEpic,
+        reorderEpic: epics.reorderEpic,
 
         // Editing state
         editingTicketId,
