@@ -20,10 +20,12 @@ import SortableChecklistElement from "./SortableChecklistElement";
 
 interface Props {
     ticket: Ticket;
+    showChecklistPanel: boolean;
 }
 
 export default function ChecklistEditor({
     ticket,
+    showChecklistPanel,
 }: Props) {
 
     const {
@@ -197,6 +199,7 @@ export default function ChecklistEditor({
                                 onDelete={deleteItem}
                                 onAddItem={handleAddItemFromElement}
                                 shouldFocus={item.id === focusedItemId}
+                                isVisible={showChecklistPanel}
                             />
                         )
                     )}
